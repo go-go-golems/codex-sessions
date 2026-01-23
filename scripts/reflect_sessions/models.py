@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from reflect_sessions_time import format_iso_utc
+from .time import format_iso_utc
 
 
 @dataclass(slots=True)

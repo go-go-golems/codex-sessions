@@ -12,30 +12,27 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-from reflect_sessions_cache import ensure_cache_dir, reflect_session
-from reflect_sessions_cli import parse_args
-from reflect_sessions_config import (
-    DEFAULT_MAX_REFLECTIONS,
-    DEFAULT_MAX_WORKERS,
-    PROMPT_VERSION_STATE_PATH,
-)
-from reflect_sessions_debug import debug_print
-from reflect_sessions_models import ReflectionRecord, SessionMeta
-from reflect_sessions_output import (
+from reflect_sessions.cache import ensure_cache_dir, reflect_session
+from reflect_sessions.cli import parse_args
+from reflect_sessions.config import DEFAULT_MAX_REFLECTIONS, DEFAULT_MAX_WORKERS
+from reflect_sessions.debug import debug_print
+from reflect_sessions.models import ReflectionRecord, SessionMeta
+from reflect_sessions.output import (
     build_human_payload,
     build_output_payload,
     build_projects_payload,
     render_projects_human,
     write_output,
 )
-from reflect_sessions_prompt import (
+from reflect_sessions.prompt import (
     compute_prompt_hash,
     ensure_prompt_version_state,
-    load_prompt_text,
-    resolve_prompt_path,
+    is_default_prompt_path,
+    prompt_cache_key,
+    resolve_prompt_selection,
 )
-from reflect_sessions_sessions import filter_sessions, load_sessions, project_counts
-from reflect_sessions_time import parse_datetime_arg
+from reflect_sessions.sessions import filter_sessions, load_sessions, project_counts
+from reflect_sessions.time import parse_datetime_arg
 from session_io import discover_session_files
 
 
@@ -129,6 +126,8 @@ def build_records(
     prompt_updated_at: str,
     prefix: str,
     refresh_mode: str,
+    prompt_cache_key: str,
+    allow_legacy_cache: bool,
     sandbox: str,
     approval: str,
     debug: bool,
@@ -147,6 +146,8 @@ def build_records(
         prompt_updated_at: Prompt updated timestamp.
         prefix: Prefix for duplicated session user message.
         refresh_mode: Cache refresh mode.
+        prompt_cache_key: Stable cache key for the prompt selection.
+        allow_legacy_cache: Whether to reuse legacy cache entries.
         sandbox: Sandbox mode for codex.
         approval: Approval policy for codex.
         debug: Whether to emit debug output.
@@ -168,6 +169,8 @@ def build_records(
                 prompt_updated_at=prompt_updated_at,
                 prefix=prefix,
                 refresh_mode=refresh_mode,
+                prompt_cache_key=prompt_cache_key,
+                allow_legacy_cache=allow_legacy_cache,
                 sandbox=sandbox,
                 approval=approval,
                 debug=debug,
@@ -191,6 +194,8 @@ def build_records(
                 prompt_updated_at=prompt_updated_at,
                 prefix=prefix,
                 refresh_mode=refresh_mode,
+                prompt_cache_key=prompt_cache_key,
+                allow_legacy_cache=allow_legacy_cache,
                 sandbox=sandbox,
                 approval=approval,
                 debug=debug,
@@ -210,14 +215,25 @@ def main() -> None:
     args = parse_args()
     sessions_root = args.sessions_root.expanduser()
     cache_dir = ensure_cache_dir(sessions_root=sessions_root, cache_dir=args.cache_dir)
-    prompt_path = resolve_prompt_path(prompt_file=args.prompt_file)
-    prompt = load_prompt_text(prompt_path=prompt_path)
-    prompt_hash = compute_prompt_hash(prompt_text=prompt)
+    prompt_selection = resolve_prompt_selection(
+        prompt_file=args.prompt_file,
+        prompt_preset=args.prompt_preset,
+        prompt_text=args.prompt_text,
+    )
+    prompt_hash = compute_prompt_hash(prompt_text=prompt_selection.prompt_text)
+    prompt_state_path = prompt_selection.version_state_path(
+        prompt_hash=prompt_hash,
+        cache_dir=cache_dir,
+    )
     prompt_state = ensure_prompt_version_state(
-        state_path=PROMPT_VERSION_STATE_PATH,
+        state_path=prompt_state_path,
         prompt_hash=prompt_hash,
         now=datetime.now(timezone.utc),
     )
+    prompt_label = prompt_selection.label(prompt_hash=prompt_hash)
+    prompt = prompt_selection.prompt_text
+    cache_key = prompt_cache_key(prompt_label=prompt_label)
+    allow_legacy_cache = is_default_prompt_path(prompt_path=prompt_selection.prompt_path)
     output_style = args.output_style
     extra_metadata = output_style == "json_extra_metadata"
     since = parse_datetime_arg(value=args.since) if args.since else None
@@ -256,6 +272,8 @@ def main() -> None:
         prompt_updated_at=prompt_state.updated_at,
         prefix=args.prefix,
         refresh_mode=args.refresh_mode,
+        prompt_cache_key=cache_key,
+        allow_legacy_cache=allow_legacy_cache,
         sandbox=args.codex_sandbox,
         approval=args.codex_approval,
         debug=args.debug,
@@ -268,7 +286,7 @@ def main() -> None:
         records=records,
         sessions_root=sessions_root,
         cache_dir=cache_dir,
-        prompt_path=prompt_path,
+        prompt_label=prompt_label,
         prompt_version=prompt_state.prompt_version,
         prompt_updated_at=prompt_state.updated_at,
         extra_metadata=extra_metadata,
@@ -278,7 +296,7 @@ def main() -> None:
             records=records,
             sessions_root=sessions_root,
             cache_dir=cache_dir,
-            prompt_path=prompt_path,
+            prompt_label=prompt_label,
             prompt_version=prompt_state.prompt_version,
             prompt_updated_at=prompt_state.updated_at,
             extra_metadata=False,

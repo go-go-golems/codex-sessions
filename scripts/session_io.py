@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+_REQUEST_TITLE_MARKER = "## my request for codex:"
+
 
 def extract_uuid_from_filename(path: Path) -> str:
     """Extract the UUID suffix from a rollout JSONL filename.
@@ -173,6 +175,25 @@ def copy_session(*, source: Path, dest: Path) -> None:
     shutil.copy2(src=source, dst=dest)
 
 
+def _find_request_title_index(*, lines: list[str]) -> int | None:
+    """Find the index of the request title line.
+
+    Args:
+        lines: User message split into lines.
+
+    Returns:
+        Index of the request title line, or None if missing.
+    """
+    for index, line in enumerate(lines):
+        if line.strip().lower() != _REQUEST_TITLE_MARKER:
+            continue
+        for next_index in range(index + 1, len(lines)):
+            if lines[next_index].strip():
+                return next_index
+        return None
+    return None
+
+
 def _normalize_user_text(*, text: str, prefix: str) -> str:
     """Normalize user text for matching.
 
@@ -183,7 +204,63 @@ def _normalize_user_text(*, text: str, prefix: str) -> str:
     Returns:
         Normalized text without the prefix.
     """
-    return text[len(prefix) :] if text.startswith(prefix) else text
+    normalized = text
+    if normalized.startswith(prefix):
+        normalized = normalized[len(prefix) :]
+    lines = normalized.splitlines()
+    title_index = _find_request_title_index(lines=lines)
+    if title_index is None:
+        return normalized
+    title_line = lines[title_index]
+    if not title_line.startswith(prefix):
+        return normalized
+    lines[title_index] = title_line[len(prefix) :]
+    return "\n".join(lines)
+
+
+def _prefix_request_title(*, text: str, prefix: str) -> tuple[str, bool]:
+    """Prefix the request title line when present.
+
+    Args:
+        text: Raw user text.
+        prefix: Prefix string to add.
+
+    Returns:
+        Tuple of (updated_text, changed).
+
+    Example:
+        updated, changed = _prefix_request_title(text=message, prefix="[SELF-REFLECTION] ")
+    """
+    lines = text.splitlines()
+    title_index = _find_request_title_index(lines=lines)
+    if title_index is None:
+        if text.startswith(prefix):
+            return text, False
+        return f"{prefix}{text}", True
+    title_line = lines[title_index]
+    if title_line.startswith(prefix):
+        return text, False
+    lines[title_index] = f"{prefix}{title_line}"
+    return "\n".join(lines), True
+
+
+def _has_prefixed_request_title(*, text: str, prefix: str) -> bool:
+    """Check whether a user message has a prefixed request title.
+
+    Args:
+        text: Raw user text.
+        prefix: Prefix string to detect.
+
+    Returns:
+        True if the request title or message start is prefixed.
+    """
+    if text.startswith(prefix):
+        return True
+    lines = text.splitlines()
+    title_index = _find_request_title_index(lines=lines)
+    if title_index is None:
+        return False
+    return lines[title_index].startswith(prefix)
 
 
 def _first_event_user_text(*, lines: list[str]) -> str | None:
@@ -260,9 +337,10 @@ def _update_event_message(
         return False, False
     if _normalize_user_text(text=message, prefix=prefix) != target:
         return False, False
-    if message.startswith(prefix):
+    updated_message, changed = _prefix_request_title(text=message, prefix=prefix)
+    if not changed:
         return True, False
-    payload["message"] = f"{prefix}{message}"
+    payload["message"] = updated_message
     return True, True
 
 
@@ -294,9 +372,10 @@ def _update_response_item(
         found_user = True
         if _normalize_user_text(text=text, prefix=prefix) != target:
             continue
-        if text.startswith(prefix):
+        updated_text, changed = _prefix_request_title(text=text, prefix=prefix)
+        if not changed:
             return True, False, True
-        item["text"] = f"{prefix}{text}"
+        item["text"] = updated_text
         return True, True, True
     return False, False, found_user
 
@@ -353,7 +432,7 @@ def is_reflection_copy(*, lines: list[str], prefix: str) -> bool:
         prefix: Prefix used to mark reflection copies.
 
     Returns:
-        True if any user message starts with the prefix.
+        True if any user message has the prefix at the request title or start.
 
     Example:
         is_copy = is_reflection_copy(lines=lines, prefix="[SELF-REFLECTION] ")
@@ -364,7 +443,9 @@ def is_reflection_copy(*, lines: list[str], prefix: str) -> bool:
             payload = data.get("payload")
             if isinstance(payload, dict) and payload.get("type") == "user_message":
                 message = payload.get("message")
-                if isinstance(message, str) and message.startswith(prefix):
+                if isinstance(message, str) and _has_prefixed_request_title(
+                    text=message, prefix=prefix
+                ):
                     return True
         if data.get("type") == "response_item":
             payload = data.get("payload")
@@ -381,17 +462,19 @@ def is_reflection_copy(*, lines: list[str], prefix: str) -> bool:
                         if item.get("type") != "input_text":
                             continue
                         text = item.get("text")
-                        if isinstance(text, str) and text.startswith(prefix):
+                        if isinstance(text, str) and _has_prefixed_request_title(
+                            text=text, prefix=prefix
+                        ):
                             return True
     return False
 
 
 def prefix_first_user_message(lines: list[str], prefix: str) -> list[str]:
-    """Prefix the first event_msg and response_item user text entries.
+    """Prefix the request title line in the first user message entries.
 
     Args:
         lines: JSONL file split into lines.
-        prefix: String to prepend to the user message.
+        prefix: String to prepend to the request title line.
 
     Returns:
         Updated list of lines.

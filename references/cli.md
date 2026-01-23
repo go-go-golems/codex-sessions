@@ -14,6 +14,8 @@ python3 reflect_sessions.py --output -
 python3 reflect_sessions.py --output-style human --output -
 ```
 
+Note: ensure your shell command timeout is at least 120000 ms (2 minutes) so runs are not cut off.
+
 ## Common recipes
 
 List projects after filtering:
@@ -76,6 +78,20 @@ Use a custom prompt file:
 python3 reflect_sessions.py --prompt-file /path/to/prompt.txt --output -
 ```
 
+Use a preset prompt:
+
+```bash
+python3 reflect_sessions.py --prompt-preset summary --output -
+```
+
+Preset names: `reflection`, `summary`, `bloat`, `incomplete`, `decisions`, `next_steps`.
+
+Use inline prompt text:
+
+```bash
+python3 reflect_sessions.py --prompt-text "Summarize the session in 5 bullets." --output -
+```
+
 ## reflect_sessions.py flags (reference)
 
 **Session roots**
@@ -108,6 +124,8 @@ Notes:
 **Reflection behavior**
 
 - `--prefix <text>`: Prefix for the duplicated session's first user message.
+- `--prompt-preset <name>`: Built-in prompt preset (default: reflection).
+- `--prompt-text <text>`: Inline prompt text (mutually exclusive with preset/file).
 - `--prompt-file <path>`: Override the reflection prompt file.
 - `--refresh-mode never|auto|always`: Cache reuse policy.
 - `--sequential`: Run reflections sequentially.

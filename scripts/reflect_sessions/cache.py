@@ -3,24 +3,44 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from reflect_sessions_config import (
+from .config import (
     AUTO_REFRESH_REASONS,
     CACHE_SCHEMA_VERSION,
     DEFAULT_CACHE_DIR_NAME,
 )
-from reflect_sessions_debug import debug_print
-from reflect_sessions_models import (
+from .debug import debug_print
+from .models import (
     CacheDecision,
     CacheEntry,
     ConversationInfo,
     ReflectionRecord,
     SessionMeta,
 )
-from reflect_sessions_sessions import build_conversation_info
-from reflect_sessions_time import now_iso, parse_timestamp
+from .sessions import build_conversation_info
+from .time import now_iso, parse_timestamp
+
+
+@dataclass(slots=True)
+class CacheContext:
+    """Cache context for a single reflection run.
+
+    Attributes:
+        cache_path: Path to write new cache entries.
+        entry_path: Path where an existing cache entry was loaded from.
+        conversation: Conversation metadata for freshness checks.
+        entry: Cached reflection entry, if any.
+        decision: Cache decision for this entry.
+    """
+
+    cache_path: Path
+    entry_path: Path | None
+    conversation: ConversationInfo
+    entry: CacheEntry | None
+    decision: CacheDecision
 
 
 def format_refresh_reason(
@@ -154,7 +174,7 @@ def maybe_cached_record(
     *,
     meta: SessionMeta,
     entry: CacheEntry | None,
-    cache_path: Path,
+    entry_path: Path | None,
     conversation: ConversationInfo,
     decision: CacheDecision,
     debug: bool,
@@ -164,7 +184,7 @@ def maybe_cached_record(
     Args:
         meta: Session metadata.
         entry: Cache entry if available.
-        cache_path: Path to cache entry file.
+        entry_path: Path to cache entry file.
         conversation: Derived conversation metadata.
         decision: Cache decision for this session.
         debug: Whether to emit debug output.
@@ -174,11 +194,12 @@ def maybe_cached_record(
     """
     if entry is None or not decision.use_cache:
         return None
+    assert entry_path is not None, "Cache entry path is missing"
     debug_print(enabled=debug, message=f"Using cache for {meta.label()}")
     return build_reflection_record(
         meta=meta,
         entry=entry,
-        cache_path=cache_path,
+        cache_path=entry_path,
         conversation=conversation,
         cached=True,
         cache_status=decision.status,
@@ -201,15 +222,31 @@ def ensure_cache_dir(*, sessions_root: Path, cache_dir: Path | None) -> Path:
     return resolved
 
 
-def cache_path_for_session(*, cache_dir: Path, session_id: str) -> Path:
-    """Return the cache path for a session id.
+def cache_path_for_session(
+    *, cache_dir: Path, session_id: str, prompt_cache_key: str
+) -> Path:
+    """Return the cache path for a session id and prompt key.
+
+    Args:
+        cache_dir: Cache directory path.
+        session_id: Session UUID.
+        prompt_cache_key: Stable cache key for the prompt.
+
+    Returns:
+        Cache file path.
+    """
+    return cache_dir / f"{session_id}-{prompt_cache_key}.json"
+
+
+def legacy_cache_path_for_session(*, cache_dir: Path, session_id: str) -> Path:
+    """Return the legacy cache path for a session id.
 
     Args:
         cache_dir: Cache directory path.
         session_id: Session UUID.
 
     Returns:
-        Cache file path.
+        Legacy cache file path.
     """
     return cache_dir / f"{session_id}.json"
 
@@ -315,7 +352,7 @@ def generate_reflection_entry(
     Returns:
         CacheEntry for the generated reflection.
     """
-    from reflect_sessions_codex import generate_reflection
+    from .codex import generate_reflection
 
     debug_print(enabled=debug, message=f"{action_label} reflection for {meta.label()}")
     reflection = generate_reflection(
@@ -347,7 +384,9 @@ def _prepare_cache_context(
     prefix: str,
     prompt_updated_at: str,
     refresh_mode: str,
-) -> tuple[Path, ConversationInfo, CacheEntry | None, CacheDecision]:
+    prompt_cache_key: str,
+    allow_legacy_cache: bool,
+) -> CacheContext:
     """Prepare cache context for a session reflection.
 
     Args:
@@ -356,21 +395,43 @@ def _prepare_cache_context(
         prefix: Prefix for duplicated session user message.
         prompt_updated_at: Prompt updated timestamp.
         refresh_mode: Cache refresh mode (never, auto, always).
+        prompt_cache_key: Stable cache key for the prompt selection.
+        allow_legacy_cache: Whether to reuse legacy cache entries.
 
     Returns:
-        Tuple of cache path, conversation info, cache entry, and cache decision.
+        CacheContext with cache paths and cache decision.
     """
-    cache_path = cache_path_for_session(cache_dir=cache_dir, session_id=meta.session_id)
+    cache_path = cache_path_for_session(
+        cache_dir=cache_dir,
+        session_id=meta.session_id,
+        prompt_cache_key=prompt_cache_key,
+    )
     conversation = build_conversation_info(meta=meta, prefix=prefix)
     prompt_updated_at_dt = parse_timestamp(value=prompt_updated_at)
-    entry = load_cache_entry(path=cache_path) if cache_path.exists() else None
+    entry_path: Path | None = None
+    if cache_path.exists():
+        entry_path = cache_path
+    elif allow_legacy_cache:
+        legacy_path = legacy_cache_path_for_session(
+            cache_dir=cache_dir,
+            session_id=meta.session_id,
+        )
+        if legacy_path.exists():
+            entry_path = legacy_path
+    entry = load_cache_entry(path=entry_path) if entry_path else None
     decision = assess_cache_decision(
         entry=entry,
         conversation_updated_at=conversation.updated_at,
         prompt_updated_at=prompt_updated_at_dt,
         refresh_mode=refresh_mode,
     )
-    return cache_path, conversation, entry, decision
+    return CacheContext(
+        cache_path=cache_path,
+        entry_path=entry_path,
+        conversation=conversation,
+        entry=entry,
+        decision=decision,
+    )
 
 
 def reflect_session(
@@ -383,6 +444,8 @@ def reflect_session(
     prompt_updated_at: str,
     prefix: str,
     refresh_mode: str,
+    prompt_cache_key: str,
+    allow_legacy_cache: bool,
     sandbox: str,
     approval: str,
     debug: bool,
@@ -400,6 +463,8 @@ def reflect_session(
         prompt_updated_at: Prompt updated timestamp.
         prefix: Prefix for duplicated session user message.
         refresh_mode: Cache refresh mode (never, auto, always).
+        prompt_cache_key: Stable cache key for the prompt selection.
+        allow_legacy_cache: Whether to reuse legacy cache entries.
         sandbox: Sandbox mode for codex.
         approval: Approval policy for codex.
         debug: Whether to emit debug output.
@@ -419,6 +484,8 @@ def reflect_session(
             prompt_updated_at="2026-01-12T00:00:00Z",
             prefix="[SELF-REFLECTION] ",
             refresh_mode="never",
+            prompt_cache_key="abc123",
+            allow_legacy_cache=True,
             sandbox="read-only",
             approval="never",
             debug=False,
@@ -426,24 +493,26 @@ def reflect_session(
             timeout_seconds=120,
         )
     """
-    cache_path, conversation, entry, decision = _prepare_cache_context(
+    context = _prepare_cache_context(
         meta=meta,
         cache_dir=cache_dir,
         prefix=prefix,
         prompt_updated_at=prompt_updated_at,
         refresh_mode=refresh_mode,
+        prompt_cache_key=prompt_cache_key,
+        allow_legacy_cache=allow_legacy_cache,
     )
     cached_record = maybe_cached_record(
         meta=meta,
-        entry=entry,
-        cache_path=cache_path,
-        conversation=conversation,
-        decision=decision,
+        entry=context.entry,
+        entry_path=context.entry_path,
+        conversation=context.conversation,
+        decision=context.decision,
         debug=debug,
     )
     if cached_record:
         return cached_record
-    action_label = "Refreshing" if entry else "Generating"
+    action_label = "Refreshing" if context.entry else "Generating"
     entry = generate_reflection_entry(
         meta=meta,
         prompt=prompt,
@@ -456,15 +525,15 @@ def reflect_session(
         debug=debug,
         codex_path=codex_path,
         timeout_seconds=timeout_seconds,
-        cache_path=cache_path,
+        cache_path=context.cache_path,
         action_label=action_label,
     )
     return build_reflection_record(
         meta=meta,
         entry=entry,
-        cache_path=cache_path,
-        conversation=conversation,
+        cache_path=context.cache_path,
+        conversation=context.conversation,
         cached=False,
-        cache_status=decision.status,
-        cache_status_reason=decision.reason,
+        cache_status=context.decision.status,
+        cache_status_reason=context.decision.reason,
     )

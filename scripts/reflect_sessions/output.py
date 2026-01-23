@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from reflect_sessions_config import CACHE_SCHEMA_VERSION
-from reflect_sessions_models import ProjectGroup, ReflectionRecord
-from reflect_sessions_time import now_iso
+from .config import CACHE_SCHEMA_VERSION
+from .models import ProjectGroup, ReflectionRecord
+from .time import now_iso
 
 
 def build_projects_payload(
@@ -71,7 +71,7 @@ def build_output_payload(
     records: list[ReflectionRecord],
     sessions_root: Path,
     cache_dir: Path,
-    prompt_path: Path,
+    prompt_label: str,
     prompt_version: str,
     prompt_updated_at: str,
     extra_metadata: bool,
@@ -82,7 +82,7 @@ def build_output_payload(
         records: Reflection records.
         sessions_root: Root directory containing session histories.
         cache_dir: Directory containing cache entries.
-        prompt_path: Path to the prompt used for this run.
+        prompt_label: Label describing the prompt used for this run.
         prompt_version: Prompt version string.
         prompt_updated_at: Prompt updated timestamp.
         extra_metadata: Whether to include system metadata fields.
@@ -117,7 +117,7 @@ def build_output_payload(
                 "cache": {
                     "schema_version": CACHE_SCHEMA_VERSION,
                     "dir": str(cache_dir),
-                    "prompt_path": str(prompt_path),
+                    "prompt_path": prompt_label,
                     "prompt_version": prompt_version,
                     "prompt_updated_at": prompt_updated_at,
                 },
@@ -148,7 +148,7 @@ def build_human_payload(
     records: list[ReflectionRecord],
     sessions_root: Path,
     cache_dir: Path,
-    prompt_path: Path,
+    prompt_label: str,
     prompt_version: str,
     prompt_updated_at: str,
     extra_metadata: bool,
@@ -159,7 +159,7 @@ def build_human_payload(
         records: Reflection records.
         sessions_root: Root directory containing session histories.
         cache_dir: Directory containing cache entries.
-        prompt_path: Path to the prompt used for this run.
+        prompt_label: Label describing the prompt used for this run.
         prompt_version: Prompt version string.
         prompt_updated_at: Prompt updated timestamp.
         extra_metadata: Whether to include metadata header fields.
@@ -196,7 +196,7 @@ def build_human_payload(
                 "cache": {
                     "schema_version": CACHE_SCHEMA_VERSION,
                     "dir": str(cache_dir),
-                    "prompt_path": str(prompt_path),
+                    "prompt_path": prompt_label,
                     "prompt_version": prompt_version,
                     "prompt_updated_at": prompt_updated_at,
                 },

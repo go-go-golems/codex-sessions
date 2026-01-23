@@ -19,13 +19,16 @@ emit grouped output by project (JSON or human-readable).
 
 - **Session roots**: `--sessions-root` and `--cache-dir`.
 - **Selection**: `--project`, `--since`, `--until`, `--session-id(s)`, `--limit`.
-- **Prompt control**: `--prompt-file` and `--prefix`.
+- **Prompt control**: `--prompt-preset`, `--prompt-text`, `--prompt-file`, and `--prefix`.
 - **Execution**: `--sequential` to avoid parallel runs.
 - **Codex overrides**: `--codex-sandbox`, `--codex-approval`,
   `--codex-timeout-seconds`, `--codex-path`.
 
-Default prompt file: `scripts/prompts/reflection.md`. Prompt versions are
-tracked in `scripts/prompts/reflection_version.json`.
+Default prompt file: `scripts/prompts/reflection.md` (preset: `reflection`).
+Other built-in presets include `summary`, `bloat`, `incomplete`, `decisions`,
+and `next_steps`. Prompt versions are tracked alongside the prompt file
+(`scripts/prompts/reflection_version.json` for the default).
+Inline prompts are recorded as `inline:<hash>` in `prompt_path` metadata.
 
 See `references/cli.md` for the full command catalog and flag list.
 
@@ -53,11 +56,15 @@ project counts (human output marks the current project with `*`).
 
 ## Cache semantics
 
-Cache files live alongside session histories:
+Cache files live alongside session histories and are keyed by session + prompt:
 
 ```
-~/.codex/sessions/reflection_cache/<session_id>.json
+~/.codex/sessions/reflection_cache/<session_id>-<prompt_key>.json
 ```
+
+`prompt_key` is a short hash derived from the prompt label (preset path or
+`inline:<hash>` for inline prompts). Legacy cache files without the prompt key
+are still read for the default `reflection` preset.
 
 Refresh modes:
 

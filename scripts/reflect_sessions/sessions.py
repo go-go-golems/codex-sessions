@@ -7,9 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from reflect_sessions_debug import debug_print
-from reflect_sessions_models import ConversationInfo, SessionMeta
-from reflect_sessions_time import format_iso_utc, parse_timestamp
+from .debug import debug_print
+from .models import ConversationInfo, SessionMeta
+from .time import format_iso_utc, parse_timestamp
 from session_io import is_reflection_copy, read_lines
 
 
@@ -112,11 +112,12 @@ def extract_first_user_text(*, path: Path) -> str:
     return first_response or ""
 
 
-def extract_request_title(*, text: str) -> str:
+def extract_request_title(*, text: str, prefix: str | None = None) -> str:
     """Extract the first request line from IDE context blocks.
 
     Args:
         text: User message text to search.
+        prefix: Optional prefix to strip from the request line.
 
     Returns:
         First non-empty line after the request header, or empty string.
@@ -126,7 +127,10 @@ def extract_request_title(*, text: str) -> str:
         if line.lower() == "## my request for codex:":
             for next_line in lines[index + 1 :]:
                 if next_line:
-                    return next_line
+                    line = next_line
+                    if prefix:
+                        line = strip_prefix(text=line, prefix=prefix).strip()
+                    return line
             return ""
     return ""
 
@@ -173,7 +177,7 @@ def build_conversation_info(*, meta: SessionMeta, prefix: str) -> ConversationIn
     updated_at_iso = format_iso_utc(timestamp=updated_at)
     raw_title = extract_first_user_text(path=meta.path)
     raw_title = strip_prefix(text=raw_title, prefix=prefix).strip()
-    request_title = extract_request_title(text=raw_title)
+    request_title = extract_request_title(text=raw_title, prefix=prefix)
     title_source = request_title or raw_title
     normalized_title = " ".join(title_source.split())
     title = truncate_text(

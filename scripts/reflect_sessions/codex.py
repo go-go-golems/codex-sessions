@@ -10,8 +10,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from reflect_sessions_debug import debug_print
-from reflect_sessions_models import SessionMeta
+from .debug import debug_print
+from .models import SessionMeta
 from session_io import create_copy_with_new_id, extract_uuid_from_filename, read_lines
 
 
@@ -234,19 +234,22 @@ def generate_reflection(
             timeout_seconds=120,
         )
     """
-    copy_path = create_copy_with_new_id(
-        source=session_meta.path,
-        dest_dir=session_meta.path.parent,
-        timestamp=None,
-        session_id=None,
-        prefix=prefix,
-    )
-    copy_id = extract_uuid_from_filename(path=copy_path)
-    debug_print(
-        enabled=debug,
-        message=f"Created reflection copy {copy_path.name} for {session_meta.label()}",
-    )
+    copy_path: Path | None = None
     try:
+        copy_path = create_copy_with_new_id(
+            source=session_meta.path,
+            dest_dir=session_meta.path.parent,
+            timestamp=None,
+            session_id=None,
+            prefix=prefix,
+        )
+        copy_id = extract_uuid_from_filename(path=copy_path)
+        debug_print(
+            enabled=debug,
+            message=(
+                f"Created reflection copy {copy_path.name} for {session_meta.label()}"
+            ),
+        )
         run_codex_reflection(
             session_id=copy_id,
             prompt=prompt,
@@ -258,7 +261,11 @@ def generate_reflection(
         )
         lines = read_lines(path=copy_path)
         reflection = extract_last_assistant_text(lines=lines)
+        return reflection
     finally:
-        copy_path.unlink()
-        debug_print(enabled=debug, message=f"Removed reflection copy {copy_path.name}")
-    return reflection
+        if copy_path is not None and copy_path.exists():
+            copy_path.unlink()
+            debug_print(
+                enabled=debug,
+                message=f"Removed reflection copy {copy_path.name}",
+            )

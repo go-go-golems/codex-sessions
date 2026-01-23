@@ -12,7 +12,7 @@ prior Codex conversations.
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.11+
 - A local Codex session archive in `~/.codex/sessions`
 - The `codex` binary available on your PATH (or pass `--codex-path`)
 
@@ -35,6 +35,43 @@ Project filter example:
 ```bash
 python3 reflect_sessions.py --project ExampleProject --output -
 ```
+
+Preset prompt example:
+
+```bash
+python3 reflect_sessions.py --prompt-preset summary --output -
+```
+
+Inline prompt example:
+
+```bash
+python3 reflect_sessions.py --prompt-text "Summarize in 5 bullets." --output -
+```
+
+## Prompt presets
+
+Available presets:
+
+- `reflection` (default): full reflection on repetition, friction, and skill ideas
+- `summary`: concise summary of goals, actions, outputs, and decisions
+- `bloat`: bloat/dead ends/cleanup opportunities introduced during the session
+- `incomplete`: open loops and unfinished tasks
+- `decisions`: key decisions, alternatives, and rationale
+- `next_steps`: concrete follow-up actions, tests, and validations
+
+Use `--prompt-preset <name>`, `--prompt-text "<prompt>"`, or `--prompt-file /path/to/prompt.md`.
+
+## Cache behavior
+
+Reflections are cached per session *and* prompt. Cache files live here:
+
+```
+~/.codex/sessions/reflection_cache/<session_id>-<prompt_key>.json
+```
+
+`prompt_key` is a short hash derived from the prompt label (preset path or
+`inline:<hash>` for inline prompts). Legacy cache files without the prompt key
+are still read for the default `reflection` preset.
 
 ## Notes on privacy
 

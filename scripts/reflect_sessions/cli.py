@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from reflect_sessions_config import (
+from .config import (
     DEFAULT_CODEX_TIMEOUT_SECONDS,
     DEFAULT_PREFIX,
+    DEFAULT_PROMPT_PRESET,
     DEFAULT_SESSIONS_ROOT,
 )
+from .prompt import prompt_preset_choices, prompt_preset_help
 
 
 def add_root_args(*, parser: argparse.ArgumentParser) -> None:
@@ -133,9 +135,29 @@ def add_prompt_args(*, parser: argparse.ArgumentParser) -> None:
         help="Prefix for the duplicated session's first user message.",
     )
     parser.add_argument(
+        "--prompt-preset",
+        type=str,
+        choices=prompt_preset_choices(),
+        help=(
+            f"Preset prompt to use (default: {DEFAULT_PROMPT_PRESET}). "
+            f"{prompt_preset_help()}"
+        ),
+    )
+    parser.add_argument(
         "--prompt-file",
         type=Path,
-        help="Optional path to a custom reflection prompt text file.",
+        help=(
+            "Optional path to a custom prompt text file "
+            "(mutually exclusive with --prompt-preset and --prompt-text)."
+        ),
+    )
+    parser.add_argument(
+        "--prompt-text",
+        type=str,
+        help=(
+            "Inline prompt text "
+            "(mutually exclusive with --prompt-preset and --prompt-file)."
+        ),
     )
 
 
