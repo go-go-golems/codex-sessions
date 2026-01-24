@@ -85,7 +85,7 @@
 - [x] `list` (session listing)
 - [x] `show` (timeline/tools/raw views as rows)
   - [ ] `export` (normalized JSON or rows)
-  - [ ] `search` (index-backed or streaming)
+- [x] `search` (index-backed or streaming)
   - [ ] `index build` / `index stats`
   - [ ] `reflect` (parity with Python reflect behavior)
 

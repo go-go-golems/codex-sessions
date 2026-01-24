@@ -56,3 +56,12 @@ Implemented normalized message extraction and added codex-sessions show (commit 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/show.go — Show command (timeline rows)
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/messages.go — Normalized message extraction
 
+
+## 2026-01-24
+
+Added codex-sessions search (non-indexed streaming scan) to find sessions/messages by substring (commit 9615a87).
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/search.go — Streaming scan search command
+

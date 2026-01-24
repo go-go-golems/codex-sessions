@@ -582,3 +582,55 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 - Validate:
   - `go test ./... -count=1`
   - `go run ./cmd/codex-sessions show --path /path/to/rollout.jsonl --output table`
+
+## Step 10: Add `search` Command (Streaming Scan)
+
+I implemented a first-pass `codex-sessions search` command that scans message text (via the normalized message extractor) and emits either one row per matching session (default) or one row per matching message (`--per-message`). This is intentionally non-indexed for now: it’s a correctness-first baseline that works without building any database.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+alright go ahead, add tasks to build the go port, detailed. then start working, commit as you go, keep your frequent diary, check tasks off as you go
+```
+
+**Assistant interpretation:** Keep expanding the CLI suite toward “query past conversations” use cases.
+
+**Inferred user intent:** Make it easy to find “the session where we talked about X” from the terminal.
+
+**Commit (code):** 9615a87 — "go: add search command (streaming scan)"
+
+### What I did
+- Added `codex-sessions search` Glazed command:
+  - `--query` (required) substring match
+  - selection flags aligned with `list`: `--project`, `--since`, `--until`, `--limit`, `--include-most-recent`
+  - `--per-message` to emit message-level rows
+  - `--case-sensitive` and `--max-snippet-chars`
+- Checked off the corresponding ticket task (`tasks.md`).
+
+### Why
+- “Search past conversations” is the key UX loop; even a simple scan-based implementation is immediately useful and informs what we need from an eventual index.
+
+### What worked
+- Command compiles and runs under Glazed (multi-format output supported automatically).
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Using the same session selection semantics as `list` keeps behavior predictable and matches the Python tool’s patterns.
+
+### What was tricky to build
+- Making “per message” output avoid accidental duplication while still keeping a useful session-level summary mode.
+
+### What warrants a second pair of eyes
+- Whether `--limit` should apply to scanned sessions or returned matches; right now it limits the scanned sessions after filtering, matching the Python semantics.
+
+### What should be done in the future
+- Add an index-backed search path (SQLite FTS) to keep interactive search fast on large archives.
+
+### Code review instructions
+- Start with `cmd/codex-sessions/search.go`.
+- Validate:
+  - `go run ./cmd/codex-sessions search --query \"error\" --output table`
