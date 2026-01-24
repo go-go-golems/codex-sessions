@@ -4,8 +4,8 @@
 
 ### Phase 0: Repo + Tooling
 
-- [ ] Decide Go module layout + binary name (suggested: `cmd/codex-sessions`)
-- [ ] Add `go.mod` + baseline `main.go`
+- [x] Decide Go module layout + binary name (suggested: `cmd/codex-sessions`)
+- [x] Add `go.mod` + baseline `main.go`
 - [ ] Add minimal build/run docs to repo `README.md` (how to run the Go CLI)
 - [ ] Add `.gitignore` updates if the Go build introduces artifacts
 

@@ -382,3 +382,64 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 - Review new files:
   - `go.mod`
   - `cmd/codex-sessions/main.go`
+
+## Step 7: Add Session Discovery + Minimal Parser + First Glazed Command (`projects`)
+
+I implemented the first slice of real functionality in Go: discovering session files and extracting minimal session metadata (id/timestamp/cwd) from the first JSONL line, matching the Python tool’s “project name” semantics. On top of that, I added the first Glazed command (`codex-sessions projects`) to output project counts as structured rows.
+
+This is the smallest end-to-end vertical slice that (a) exercises the Go module, (b) locks in Glazed usage patterns, and (c) starts building reusable parsing primitives for the rest of the CLI suite.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+alright go ahead, add tasks to build the go port, detailed. then start working, commit as you go, keep your frequent diary, check tasks off as you go
+```
+
+**Assistant interpretation:** Start implementing the Go port in small increments with real commands, not just docs.
+
+**Inferred user intent:** Get an actually runnable CLI quickly, then iterate toward full parity and richer querying.
+
+**Commit (code):** (pending) — will be recorded after the commit is created
+
+### What I did
+- Pulled Go deps for Glazed/Cobra via `go get`, then ran `go mod tidy` to generate `go.sum`.
+- Added `internal/sessions` package:
+  - Discovery: recursive scan for `rollout-*.jsonl`, excluding `-copy` artifacts.
+  - Minimal parser: `ReadSessionMeta` supports new + legacy session meta formats.
+- Added unit tests for discovery and session meta parsing.
+- Replaced placeholder `cmd/codex-sessions/main.go` with a Cobra root command and a Glazed subcommand.
+- Added `cmd/codex-sessions projects` Glazed command that emits `project`, `count`, and `current` columns.
+
+### Why
+- The Go port needs a real CLI surface early to validate design assumptions and avoid large unreviewable changes.
+- Session discovery + meta parsing is a dependency for almost every other command (`list`, `search`, `reflect`, etc.).
+
+### What worked
+- `go test ./... -count=1` passes after `go mod tidy`.
+- `codex-sessions projects` is wired through Glazed’s `BuildCobraCommand` and emits structured rows.
+
+### What didn't work
+- Earlier `go get` failed due to network restrictions; once network was available, dependency fetch and tidy succeeded.
+
+### What I learned
+- Glazed’s example (`new-api-build-first-command`) maps cleanly to our use case: define flags via `fields.New`, decode settings via `values.DecodeSectionInto`, emit `types.Row`.
+
+### What was tricky to build
+- Ensuring the `session_meta` parser handles both the wrapped and legacy formats without over-committing to full schema knowledge.
+
+### What warrants a second pair of eyes
+- Whether excluding files by `\"-copy\"` substring is sufficient to avoid indexing transient reflection copies in real archives; we may also need prefix-based detection (`[SELF-REFLECTION]`) when scanning message content later.
+
+### What should be done in the future
+- Add the streaming JSONL reader with per-line metadata (type/timestamp/raw JSON) so “updated_at”, “title”, and message timelines can be derived without ad-hoc parsing.
+
+### Code review instructions
+- Start with:
+  - `internal/sessions/discover.go`
+  - `internal/sessions/parser.go`
+  - `cmd/codex-sessions/projects.go`
+- Validate locally:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions projects --output table`

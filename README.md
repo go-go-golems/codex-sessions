@@ -78,6 +78,19 @@ are still read for the default `reflection` preset.
 The CLI reads local session histories from `~/.codex/sessions`. Reflections may contain
 sensitive content from those sessions. Review outputs before sharing them publicly.
 
+## Go port (WIP)
+
+This repo now includes an in-progress Go CLI (`codex-sessions`) that will eventually
+replace/extend the Python tooling with richer parsing/query capabilities.
+
+Run the CLI from the repo root:
+
+```bash
+go test ./... -count=1
+go run ./cmd/codex-sessions --help
+go run ./cmd/codex-sessions projects --output table
+```
+
 ## License
 
 MIT. See `LICENSE`.
