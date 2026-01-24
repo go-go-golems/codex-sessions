@@ -401,7 +401,7 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 
 **Inferred user intent:** Get an actually runnable CLI quickly, then iterate toward full parity and richer querying.
 
-**Commit (code):** (pending) — will be recorded after the commit is created
+**Commit (code):** d4dcafc — "go: add sessions discovery and projects command"
 
 ### What I did
 - Pulled Go deps for Glazed/Cobra via `go get`, then ran `go mod tidy` to generate `go.sum`.
@@ -422,6 +422,13 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 
 ### What didn't work
 - Earlier `go get` failed due to network restrictions; once network was available, dependency fetch and tidy succeeded.
+- While updating the ticket changelog, I accidentally used unquoted backticks in a shell command, which triggered command substitution in zsh:
+
+  ```text
+  zsh:1: command not found: codex-sessions
+  ```
+
+  I corrected the changelog entry afterward to avoid backticks entirely.
 
 ### What I learned
 - Glazed’s example (`new-api-build-first-command`) maps cleanly to our use case: define flags via `fields.New`, decode settings via `values.DecodeSectionInto`, emit `types.Row`.

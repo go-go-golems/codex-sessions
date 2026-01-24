@@ -6,21 +6,21 @@
 
 - [x] Decide Go module layout + binary name (suggested: `cmd/codex-sessions`)
 - [x] Add `go.mod` + baseline `main.go`
-- [ ] Add minimal build/run docs to repo `README.md` (how to run the Go CLI)
-- [ ] Add `.gitignore` updates if the Go build introduces artifacts
+- [x] Add minimal build/run docs to repo `README.md` (how to run the Go CLI)
+- [x] Add `.gitignore` updates if the Go build introduces artifacts
 
 ### Phase 1: Session JSONL discovery + parsing (streaming, tolerant)
 
-- [ ] Implement session file discovery:
-  - [ ] Default root: `~/.codex/sessions`
-  - [ ] Match `**/rollout-*.jsonl`, exclude reflection copies and `-copy` artifacts
+- [x] Implement session file discovery:
+- [x] Default root: `~/.codex/sessions`
+- [x] Match `**/rollout-*.jsonl`, exclude reflection copies and `-copy` artifacts
 - [ ] Implement streaming JSONL reader (line-by-line) with:
   - [ ] line number tracking
   - [ ] best-effort extraction of `type` and optional `timestamp`
   - [ ] raw JSON retention for unknown formats
-- [ ] Implement `session_meta` decoding supporting:
-  - [ ] new format: `{type:"session_meta", payload:{id,timestamp,cwd,...}}`
-  - [ ] legacy format: `{id,timestamp,cwd,...}` (no wrapper)
+- [x] Implement `session_meta` decoding supporting:
+- [x] new format: `{type:"session_meta", payload:{id,timestamp,cwd,...}}`
+- [x] legacy format: `{id,timestamp,cwd,...}` (no wrapper)
 
 ### Phase 2: Normalization (conversation “truth table”)
 
@@ -79,9 +79,9 @@
 
 ### Phase 6: Glazed CLI suite
 
-- [ ] Use Glazed patterns (`values.DecodeSectionInto` + `types.Row`)
+- [x] Use Glazed patterns (`values.DecodeSectionInto` + `types.Row`)
 - [ ] Implement commands:
-  - [ ] `projects` (counts per project; mark current project)
+- [x] `projects` (counts per project; mark current project)
   - [ ] `list` (session listing)
   - [ ] `show` (timeline/tools/raw views as rows)
   - [ ] `export` (normalized JSON or rows)
