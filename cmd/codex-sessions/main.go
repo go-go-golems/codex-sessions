@@ -66,6 +66,23 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraShowCmd)
 
+	searchCmd, err := NewSearchCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating search command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraSearchCmd, err := cli.BuildCobraCommand(searchCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(cobraSearchCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
