@@ -200,7 +200,13 @@ Keep a detailed diary while you are investigating with frequent entries.
 - The existing code already contains patterns for extracting text from multiple JSONL representations (`event_msg` vs `response_item`).
 
 ### What didn't work
-- N/A.
+- While updating the ticket changelog, I again used backticks in a shell command (inside double quotes), which triggered zsh command substitution:
+
+  ```text
+  zsh:1: command not found: codex-sessions
+  ```
+
+  I fixed the resulting changelog entry manually and will avoid backticks entirely in docmgr CLI invocations going forward.
 
 ### What I learned
 - Even without full schema knowledge, scanning nested payload trees for specific keys (`text`, `arguments`, `output`) is a practical way to extract value while remaining robust to format changes.
@@ -450,3 +456,68 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 - Validate locally:
   - `go test ./... -count=1`
   - `go run ./cmd/codex-sessions projects --output table`
+
+## Step 8: Implement Streaming JSONL Scan + `list` Command (updated_at + title)
+
+I extended the Go parsing layer from “first-line session_meta only” to a streaming JSONL scan that can (a) compute `conversation_updated_at` by scanning timestamps across the whole file and (b) derive a display `conversation_title` from the first user message (with the same `## my request for codex:` marker behavior as the Python tool). With those primitives in place, I added the second Glazed command: `codex-sessions list`.
+
+This gives us a usable “browse past sessions” command that does not require any reflection/LLM calls and is the foundation for future query commands (`show`, `search`, indexing).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+alright go ahead, add tasks to build the go port, detailed. then start working, commit as you go, keep your frequent diary, check tasks off as you go
+```
+
+**Assistant interpretation:** Keep implementing the port iteratively, prioritizing queryable metadata first.
+
+**Inferred user intent:** Make it easy to find relevant past sessions quickly without relying on model-generated reflections.
+
+**Commit (code):** 15e3b6a — "go: add jsonl scanning and list command"
+
+### What I did
+- Added streaming JSONL walker with:
+  - line numbers
+  - minimal envelope decode (`type`, `timestamp`)
+  - raw JSON retention for downstream extraction
+- Added conversation helpers:
+  - `ConversationUpdatedAt` (max timestamp across lines)
+  - `ConversationTitle` (first user message + request marker parsing + prefix stripping + truncation)
+- Added `codex-sessions list` Glazed command with filters:
+  - `--project`, `--since`, `--until`, `--limit`, `--include-most-recent`
+- Added unit tests for updated_at + title extraction.
+- Checked off the corresponding tasks in the ticket (`tasks.md`).
+
+### Why
+- “List sessions with titles and last-updated timestamps” is the primary building block for interactive querying and debugging.
+- Streaming scan avoids loading entire session files into memory and stays robust as logs grow.
+
+### What worked
+- `go test ./... -count=1` passes.
+- `codex-sessions list` is wired via Glazed and emits structured rows suitable for JSON/CSV/table output.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Scanning for a top-level `timestamp` field (regardless of line type) matches the Python code’s “updated_at” behavior and is simple/robust.
+
+### What was tricky to build
+- Stopping early once an `event_msg` user message is found while still keeping the JSONL scanning API clean; I used a small internal sentinel error to short-circuit the walk.
+
+### What warrants a second pair of eyes
+- Whether “first user message” should always prefer `event_msg` over `response_item` in all recorded logs; if Codex versions differ, we may want to keep both as metadata for debugging.
+
+### What should be done in the future
+- Add a `show` command that emits a normalized message timeline (role/text/timestamp/source) using the same streaming primitives.
+
+### Code review instructions
+- Start with:
+  - `internal/sessions/jsonl.go`
+  - `internal/sessions/conversation.go`
+  - `cmd/codex-sessions/list.go`
+- Validate:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions list --output table`

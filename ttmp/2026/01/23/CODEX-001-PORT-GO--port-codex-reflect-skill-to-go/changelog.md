@@ -36,3 +36,13 @@ Checked off initial build/run + gitignore tasks and corrected changelog entry fo
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/changelog.md — Fix backtick-substitution damage
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/tasks.md — Mark build/run and gitignore tasks complete
 
+
+## 2026-01-24
+
+Added streaming JSONL scan (line metadata + raw retention), derived conversation updated_at/title, and implemented codex-sessions list (commit 15e3b6a).
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/list.go — Glazed list command
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/conversation.go — updated_at + title derivation
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/jsonl.go — Streaming JSONL walker

@@ -14,23 +14,23 @@
 - [x] Implement session file discovery:
 - [x] Default root: `~/.codex/sessions`
 - [x] Match `**/rollout-*.jsonl`, exclude reflection copies and `-copy` artifacts
-- [ ] Implement streaming JSONL reader (line-by-line) with:
-  - [ ] line number tracking
-  - [ ] best-effort extraction of `type` and optional `timestamp`
-  - [ ] raw JSON retention for unknown formats
+- [x] Implement streaming JSONL reader (line-by-line) with:
+- [x] line number tracking
+- [x] best-effort extraction of `type` and optional `timestamp`
+- [x] raw JSON retention for unknown formats
 - [x] Implement `session_meta` decoding supporting:
 - [x] new format: `{type:"session_meta", payload:{id,timestamp,cwd,...}}`
 - [x] legacy format: `{id,timestamp,cwd,...}` (no wrapper)
 
 ### Phase 2: Normalization (conversation “truth table”)
 
-- [ ] Implement `conversation_updated_at` = max timestamp across JSONL lines
-- [ ] Implement `conversation_title` heuristic:
-  - [ ] prefer first `event_msg.user_message.message`
-  - [ ] fallback to first `response_item` where role=user and first `input_text`
-  - [ ] support the IDE marker `## my request for codex:` (extract the next non-empty line)
-  - [ ] strip `[SELF-REFLECTION] ` prefix when present
-  - [ ] truncate to a stable limit (match Python: 80 chars)
+- [x] Implement `conversation_updated_at` = max timestamp across JSONL lines
+- [x] Implement `conversation_title` heuristic:
+- [x] prefer first `event_msg.user_message.message`
+- [x] fallback to first `response_item` where role=user and first `input_text`
+- [x] support the IDE marker `## my request for codex:` (extract the next non-empty line)
+- [x] strip `[SELF-REFLECTION] ` prefix when present
+- [x] truncate to a stable limit (match Python: 80 chars)
 - [ ] Normalize message timeline:
   - [ ] map `event_msg` and `response_item` into a unified `Message{role, ts, text, source}`
   - [ ] keep raw segments for export/debug
@@ -82,7 +82,7 @@
 - [x] Use Glazed patterns (`values.DecodeSectionInto` + `types.Row`)
 - [ ] Implement commands:
 - [x] `projects` (counts per project; mark current project)
-  - [ ] `list` (session listing)
+- [x] `list` (session listing)
   - [ ] `show` (timeline/tools/raw views as rows)
   - [ ] `export` (normalized JSON or rows)
   - [ ] `search` (index-backed or streaming)
@@ -91,6 +91,6 @@
 
 ### Phase 7: Validation + tests
 
-- [ ] Add parser unit tests with small fixtures (redacted)
+- [x] Add parser unit tests with small fixtures (redacted)
 - [ ] Validate against a real `~/.codex/sessions` archive (local)
 - [ ] Document known edge cases + limitations in the ticket
