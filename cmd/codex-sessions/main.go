@@ -49,6 +49,23 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraListCmd)
 
+	showCmd, err := NewShowCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating show command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraShowCmd, err := cli.BuildCobraCommand(showCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(cobraShowCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
