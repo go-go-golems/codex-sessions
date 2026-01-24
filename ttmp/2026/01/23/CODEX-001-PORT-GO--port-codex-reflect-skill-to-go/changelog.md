@@ -46,3 +46,13 @@ Added streaming JSONL scan (line metadata + raw retention), derived conversation
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/list.go — Glazed list command
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/conversation.go — updated_at + title derivation
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/jsonl.go — Streaming JSONL walker
+
+## 2026-01-24
+
+Implemented normalized message extraction and added codex-sessions show (commit f52ca3e).
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/show.go — Show command (timeline rows)
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/messages.go — Normalized message extraction
+

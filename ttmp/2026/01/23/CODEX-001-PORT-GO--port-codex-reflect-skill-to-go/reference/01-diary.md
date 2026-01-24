@@ -521,3 +521,64 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 - Validate:
   - `go test ./... -count=1`
   - `go run ./cmd/codex-sessions list --output table`
+
+## Step 9: Implement Normalized Message Timeline + `show` Command
+
+I added a best-effort message extractor that normalizes the two message representations we already rely on in the Python tool (`event_msg` user messages and `response_item` message segments). With that in place, I implemented `codex-sessions show`, which outputs one row per message with role/text/timestamp and the originating source type.
+
+This is the first “query the actual conversation” command beyond metadata, and it sets up the next steps (tool extraction, export, and search).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+alright go ahead, add tasks to build the go port, detailed. then start working, commit as you go, keep your frequent diary, check tasks off as you go
+```
+
+**Assistant interpretation:** Continue adding commands that make sessions inspectable, prioritizing correctness and structured outputs.
+
+**Inferred user intent:** Make it easy to inspect what happened in past sessions without opening raw JSONL files.
+
+**Commit (code):** f52ca3e — "go: add show command and message timeline extraction"
+
+### What I did
+- Added `internal/sessions.ExtractMessages`:
+  - supports `event_msg` user messages
+  - supports `response_item` user/assistant messages via `input_text`/`output_text`
+- Added `internal/sessions.FindSessionByID` to locate a session JSONL by session id (first-line scan).
+- Added `codex-sessions show` Glazed command:
+  - `--session-id` (look up under `--sessions-root`) or `--path` (direct file)
+  - `--max-chars` to truncate large message texts
+- Added unit tests for message extraction.
+- Checked off the corresponding ticket tasks (`tasks.md`).
+
+### Why
+- Normalized message timelines are the core primitive for “show”, “export”, “search”, and later “facet extraction”.
+
+### What worked
+- `go test ./... -count=1` passes.
+- `codex-sessions show` emits stable, row-oriented output that Glazed can format to table/JSON/CSV.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Keeping “source” (`event_msg` vs `response_item`) as a column is useful for debugging schema drift without blocking the user experience.
+
+### What was tricky to build
+- Response items can contain multiple segments; for now, the extractor emits one row per text segment to avoid making assumptions about concatenation boundaries.
+
+### What warrants a second pair of eyes
+- Whether we should merge adjacent assistant `output_text` segments into a single message row for common use cases, with an option to keep them split.
+
+### What should be done in the future
+- Add tool call extraction (arguments/output) and an `export` command for normalized JSON.
+
+### Code review instructions
+- Start with:
+  - `internal/sessions/messages.go`
+  - `cmd/codex-sessions/show.go`
+- Validate:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions show --path /path/to/rollout.jsonl --output table`

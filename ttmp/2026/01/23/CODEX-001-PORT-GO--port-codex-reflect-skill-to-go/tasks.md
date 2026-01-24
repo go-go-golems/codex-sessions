@@ -31,9 +31,9 @@
 - [x] support the IDE marker `## my request for codex:` (extract the next non-empty line)
 - [x] strip `[SELF-REFLECTION] ` prefix when present
 - [x] truncate to a stable limit (match Python: 80 chars)
-- [ ] Normalize message timeline:
-  - [ ] map `event_msg` and `response_item` into a unified `Message{role, ts, text, source}`
-  - [ ] keep raw segments for export/debug
+- [x] Normalize message timeline:
+- [x] map `event_msg` and `response_item` into a unified `Message{role, ts, text, source}`
+- [x] keep raw segments for export/debug
 
 ### Phase 3: Extraction facets (query building blocks)
 
@@ -83,7 +83,7 @@
 - [ ] Implement commands:
 - [x] `projects` (counts per project; mark current project)
 - [x] `list` (session listing)
-  - [ ] `show` (timeline/tools/raw views as rows)
+- [x] `show` (timeline/tools/raw views as rows)
   - [ ] `export` (normalized JSON or rows)
   - [ ] `search` (index-backed or streaming)
   - [ ] `index build` / `index stats`
