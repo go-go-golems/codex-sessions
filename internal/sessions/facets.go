@@ -126,16 +126,24 @@ func maybeInt(v any) (int, bool) {
 	return 0, false
 }
 
-func findToolName(m map[string]any) string {
+func toolNameForObject(m map[string]any) string {
+	// Tighten heuristics to avoid treating arbitrary objects with a "name" field
+	// as tool invocations.
 	if s, ok := maybeString(m["tool_name"]); ok {
 		return s
 	}
-	if s, ok := maybeString(m["name"]); ok {
-		return s
-	}
-	if fn, ok := m["function"].(map[string]any); ok {
-		if s, ok := maybeString(fn["name"]); ok {
+
+	typ, _ := m["type"].(string)
+	switch typ {
+	case "tool_call", "tool_result", "tool_output", "tool":
+		// allow name-based fallbacks only for objects that explicitly look tool-ish
+		if s, ok := maybeString(m["name"]); ok {
 			return s
+		}
+		if fn, ok := m["function"].(map[string]any); ok {
+			if s, ok := maybeString(fn["name"]); ok {
+				return s
+			}
 		}
 	}
 	return ""
@@ -152,7 +160,7 @@ func marshalCompact(v any) string {
 func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]ToolOutput, ts time.Time, max int) {
 	switch v := value.(type) {
 	case map[string]any:
-		name := findToolName(v)
+		name := toolNameForObject(v)
 		if name != "" {
 			if args, ok := v["arguments"]; ok {
 				argsStr := marshalCompact(args)
@@ -185,6 +193,111 @@ func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]T
 		for _, item := range v {
 			collectToolCallsAndOutputs(item, outCalls, outOutputs, ts, max)
 		}
+	}
+}
+
+func extractToolFromResponseItemPayload(
+	payload map[string]any,
+	ts time.Time,
+	outCalls *[]ToolCall,
+	outOutputs *[]ToolOutput,
+	callIDToName map[string]string,
+	max int,
+) bool {
+	payloadType, _ := payload["type"].(string)
+	switch payloadType {
+	case "custom_tool_call":
+		name, ok := maybeString(payload["name"])
+		if !ok {
+			return false
+		}
+		// Codex sessions typically store args as a string under "input".
+		if input, ok := payload["input"]; ok {
+			inStr := marshalCompact(input)
+			if inStr == "" {
+				if s, ok := input.(string); ok {
+					inStr = s
+				}
+			}
+			if inStr != "" {
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(inStr, max)})
+			}
+		}
+		if callID, ok := maybeString(payload["call_id"]); ok {
+			callIDToName[callID] = name
+		}
+		return true
+	case "custom_tool_call_output":
+		// Outputs are linked to calls via call_id; the payload doesn't always include the tool name.
+		name := ""
+		if callID, ok := maybeString(payload["call_id"]); ok {
+			name = callIDToName[callID]
+		}
+		if name == "" {
+			name = "unknown"
+		}
+		if out, ok := payload["output"]; ok {
+			outStr := marshalCompact(out)
+			if outStr == "" {
+				if s, ok := out.(string); ok {
+					outStr = s
+				}
+			}
+			if outStr != "" {
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, max)})
+			}
+		}
+		return true
+	case "tool_call":
+		name := ""
+		if s, ok := maybeString(payload["tool_name"]); ok {
+			name = s
+		}
+		if name == "" {
+			return false
+		}
+		if args, ok := payload["arguments"]; ok {
+			argsStr := marshalCompact(args)
+			if argsStr == "" {
+				if s, ok := args.(string); ok {
+					argsStr = s
+				}
+			}
+			if argsStr != "" {
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, max)})
+			}
+		}
+		if callID, ok := maybeString(payload["call_id"]); ok {
+			callIDToName[callID] = name
+		}
+		return true
+	case "tool_result", "tool_output":
+		name := ""
+		if s, ok := maybeString(payload["tool_name"]); ok {
+			name = s
+		}
+		if name == "" {
+			if callID, ok := maybeString(payload["call_id"]); ok {
+				name = callIDToName[callID]
+			}
+		}
+		if name == "" {
+			name = "unknown"
+		}
+		if out, ok := payload["output"]; ok {
+			outStr := marshalCompact(out)
+			if outStr == "" {
+				if s, ok := out.(string); ok {
+					outStr = s
+				}
+			}
+			if outStr != "" {
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, max)})
+			}
+		}
+		return true
+	default:
+		return false
 	}
 }
 
@@ -286,6 +399,7 @@ func ExtractFacets(path string, opts FacetOptions) (*Facets, error) {
 	var texts []TextField
 	var calls []ToolCall
 	var outs []ToolOutput
+	callIDToName := map[string]string{}
 	err = WalkJSONLLines(path, func(line JSONLLine) error {
 		ts, ok := normalizeTimestamp(line.Timestamp)
 		if !ok {
@@ -297,7 +411,17 @@ func ExtractFacets(path string, opts FacetOptions) (*Facets, error) {
 			return nil
 		}
 		collectTextFields(decoded, []string{}, &texts, ts, opts.MaxValueChars)
-		collectToolCallsAndOutputs(decoded, &calls, &outs, ts, opts.MaxValueChars)
+		extractedTool := false
+		if top, ok := decoded.(map[string]any); ok {
+			if topType, _ := top["type"].(string); topType == "response_item" {
+				if payload, ok := top["payload"].(map[string]any); ok {
+					extractedTool = extractToolFromResponseItemPayload(payload, ts, &calls, &outs, callIDToName, opts.MaxValueChars)
+				}
+			}
+		}
+		if !extractedTool {
+			collectToolCallsAndOutputs(decoded, &calls, &outs, ts, opts.MaxValueChars)
+		}
 		return nil
 	})
 	if err != nil {

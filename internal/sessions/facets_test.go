@@ -64,3 +64,33 @@ func TestExtractFacets_TextsToolsPathsErrors(t *testing.T) {
 		t.Fatalf("expected panic error signal")
 	}
 }
+
+func TestExtractFacets_CustomToolCallAndOutput(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "rollout.jsonl")
+	contents := "" +
+		`{"type":"session_meta","payload":{"id":"x","timestamp":"2026-01-01T00:00:00Z","cwd":"/tmp/proj"}}` + "\n" +
+		`{"type":"response_item","timestamp":"2026-01-01T00:00:11Z","payload":{"type":"custom_tool_call","status":"completed","call_id":"call_1","name":"apply_patch","input":"*** Begin Patch\\n*** End Patch"}}` + "\n" +
+		`{"type":"response_item","timestamp":"2026-01-01T00:00:12Z","payload":{"type":"custom_tool_call_output","call_id":"call_1","output":"ok"}}` + "\n"
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	facets, err := ExtractFacets(path, DefaultFacetOptions())
+	if err != nil {
+		t.Fatalf("ExtractFacets: %v", err)
+	}
+
+	if len(facets.ToolCalls) != 1 {
+		t.Fatalf("expected 1 tool call, got %d", len(facets.ToolCalls))
+	}
+	if facets.ToolCalls[0].Name != "apply_patch" {
+		t.Fatalf("expected tool call name apply_patch, got %q", facets.ToolCalls[0].Name)
+	}
+	if len(facets.ToolOutputs) != 1 {
+		t.Fatalf("expected 1 tool output, got %d", len(facets.ToolOutputs))
+	}
+	if facets.ToolOutputs[0].Name != "apply_patch" {
+		t.Fatalf("expected tool output name apply_patch, got %q", facets.ToolOutputs[0].Name)
+	}
+}

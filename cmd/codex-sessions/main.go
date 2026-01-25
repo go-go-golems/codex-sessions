@@ -83,6 +83,23 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraSearchCmd)
 
+	exportCmd, err := NewExportCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating export command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraExportCmd, err := cli.BuildCobraCommand(exportCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(cobraExportCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
