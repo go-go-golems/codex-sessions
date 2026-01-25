@@ -737,3 +737,65 @@ run it for testing and see how well it works, write a test report when done, sto
 
 ### What should be done in the future
 - N/A.
+
+## Step 13: Implement Facet Extraction (texts/tools/paths/errors) + Wire Into `show`
+
+I started Phase 3 (“facet extraction”) by adding a best-effort extractor that derives additional queryable signals from a session: nested `text` fields, tool call arguments and tool outputs (heuristic), path mentions, and error signals. I then wired these facets into `codex-sessions show` via a new `--view` flag so we can inspect tools/paths/errors directly without opening raw JSONL.
+
+I also improved `search` output by adding a `--single-line` toggle (default true) to avoid multiline table cells from exploding terminal output.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+ok cool, continue. CHeck off tasks and commit and keep a frequent detailed diary.
+```
+
+**Assistant interpretation:** Continue implementing the remaining tasks, commit incremental changes, and document progress.
+
+**Inferred user intent:** Make steady progress toward richer querying (facets/index/reflect) while keeping work reviewable.
+
+**Commit (code):** (pending) — will be recorded after commit
+
+### What I did
+- Added facet extraction utilities:
+  - Collect nested `text` fields from JSON payloads.
+  - Heuristically detect tool calls/outputs by scanning objects that include `tool_name`/`name` + `arguments`/`output`.
+  - Detect path mentions via regex (absolute/relative/file-extension patterns).
+  - Detect error signals via regex (exit codes, panic/traceback/error lines).
+- Added a new `codex-sessions show --view` switch:
+  - `timeline` (existing)
+  - `tools`, `paths`, `errors`, `texts`
+- Added `codex-sessions search --single-line` (default true) to replace newlines with `\\n` in snippets.
+- Added unit tests around `ExtractFacets`.
+
+### Why
+- Facets are the core “query building blocks” for fast recall: “sessions that ran a tool”, “sessions mentioning file X”, “sessions with errors”, etc.
+- Wiring facets into `show` provides immediate utility without waiting for an `export` or an index.
+
+### What worked
+- `go test ./... -count=1` passes after adding facets and tests.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Glazed `types.Row` is itself a pointer alias type, so helper functions should accept `types.Row` (not `*types.Row`) to avoid double-pointer type errors.
+
+### What was tricky to build
+- Tool call schema is not guaranteed; we must keep the detection heuristic and avoid treating it as authoritative until we confirm real log shapes.
+
+### What warrants a second pair of eyes
+- Regex-based path detection can have false positives; we should validate on a larger sample and optionally add allow/deny filters.
+
+### What should be done in the future
+- Add `export` command to emit structured facet JSON/NDJSON.
+- Add index-backed search for performance once facets stabilize.
+
+### Code review instructions
+- Start with:
+  - `internal/sessions/facets.go`
+  - `internal/sessions/patterns.go`
+  - `cmd/codex-sessions/show.go`
+  - `cmd/codex-sessions/search.go`

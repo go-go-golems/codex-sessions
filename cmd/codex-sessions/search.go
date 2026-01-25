@@ -28,6 +28,7 @@ type SearchSettings struct {
 	CaseSensitive     bool   `glazed.parameter:"case-sensitive"`
 	PerMessage        bool   `glazed.parameter:"per-message"`
 	MaxSnippetChars   int    `glazed.parameter:"max-snippet-chars"`
+	SingleLine        bool   `glazed.parameter:"single-line"`
 }
 
 type SearchCommand struct {
@@ -103,6 +104,12 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.WithDefault(200),
 				fields.WithHelp("Maximum snippet length to include in output"),
 			),
+			fields.New(
+				"single-line",
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Render snippet/text as a single line (newlines become \\\\n)"),
+			),
 		),
 	)
 	return &SearchCommand{CommandDescription: desc}, nil
@@ -143,6 +150,16 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	query := settings.Query
 	if !settings.CaseSensitive {
 		query = strings.ToLower(query)
+	}
+	render := func(s string) string {
+		if settings.SingleLine {
+			s = strings.ReplaceAll(s, "\r\n", "\n")
+			s = strings.ReplaceAll(s, "\n", `\n`)
+		}
+		if settings.MaxSnippetChars > 0 && len(s) > settings.MaxSnippetChars {
+			s = s[:settings.MaxSnippetChars-1] + "…"
+		}
+		return s
 	}
 
 	paths, err := sessions.DiscoverRolloutFiles(settings.SessionsRoot)
@@ -205,10 +222,7 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 				continue
 			}
 			matchCount++
-			snippet := text
-			if settings.MaxSnippetChars > 0 && len(snippet) > settings.MaxSnippetChars {
-				snippet = snippet[:settings.MaxSnippetChars-1] + "…"
-			}
+			snippet := render(text)
 			if firstSnippet == "" {
 				firstSnippet = snippet
 			}
