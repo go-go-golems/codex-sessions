@@ -44,14 +44,14 @@ func normalizeSpaces(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
 		return s
 	}
-	if max <= 1 {
+	if maxLen <= 1 {
 		return "…"
 	}
-	return s[:max-1] + "…"
+	return s[:maxLen-1] + "…"
 }
 
 func extractRequestTitle(text string, prefix string) string {

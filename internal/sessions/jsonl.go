@@ -29,7 +29,7 @@ func WalkJSONLLines(path string, fn func(line JSONLLine) error) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	// Bump buffer size to tolerate larger JSONL lines (tool outputs, etc.).

@@ -244,6 +244,4 @@ func (c *ShowCommand) RunIntoGlazeProcessor(
 	default:
 		return errors.Errorf("unknown --view %q", settings.View)
 	}
-
-	return nil
 }

@@ -174,18 +174,6 @@ func nextPromptVersion(previous string, dateStr string) string {
 	return dateStr + "-v1"
 }
 
-func loadPromptVersionState(path string) (PromptVersionState, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return PromptVersionState{}, err
-	}
-	var st PromptVersionState
-	if err := json.Unmarshal(b, &st); err != nil {
-		return PromptVersionState{}, err
-	}
-	return st, nil
-}
-
 func writePromptVersionState(path string, st PromptVersionState) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -231,7 +219,6 @@ func EnsurePromptVersionState(selection PromptSelection, cacheDir string, now ti
 		seedPath := strings.TrimSuffix(p.Filename, ".md") + "_version.json"
 		if b, err := presetfs.FS.ReadFile(seedPath); err == nil {
 			_ = json.Unmarshal(b, &st)
-			stLoaded = st.PromptVersion != "" && st.PromptHash != ""
 		}
 	}
 
@@ -247,7 +234,6 @@ func EnsurePromptVersionState(selection PromptSelection, cacheDir string, now ti
 			if err2 := writePromptVersionState(fallback, st); err2 != nil {
 				return PromptVersionState{}, "", err2
 			}
-			statePath = fallback
 		} else if err != nil {
 			return PromptVersionState{}, "", err
 		}

@@ -3,6 +3,7 @@ package indexdb
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"sort"
 	"time"
 )
@@ -87,7 +88,7 @@ LIMIT ?;`,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []SearchHit
 	for rows.Next() {
@@ -161,7 +162,7 @@ LIMIT ?;`,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []SearchHit
 	for rows.Next() {
@@ -235,7 +236,7 @@ LIMIT ?;`,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []SearchHit
 	for rows.Next() {
@@ -266,6 +267,18 @@ LIMIT ?;`,
 func Search(ctx context.Context, db *sql.DB, opts SearchOptions) ([]SearchHit, error) {
 	var hits []SearchHit
 	switch opts.Scope {
+	case "":
+		msgs, err := searchMessages(ctx, db, opts)
+		if err != nil {
+			return nil, err
+		}
+		hits = append(hits, msgs...)
+	case ScopeMessages:
+		msgs, err := searchMessages(ctx, db, opts)
+		if err != nil {
+			return nil, err
+		}
+		hits = append(hits, msgs...)
 	case ScopeTools:
 		calls, err := searchToolCalls(ctx, db, opts)
 		if err != nil {
@@ -294,11 +307,7 @@ func Search(ctx context.Context, db *sql.DB, opts SearchOptions) ([]SearchHit, e
 		hits = append(hits, calls...)
 		hits = append(hits, outs...)
 	default:
-		msgs, err := searchMessages(ctx, db, opts)
-		if err != nil {
-			return nil, err
-		}
-		hits = append(hits, msgs...)
+		return nil, fmt.Errorf("unknown search scope %q", opts.Scope)
 	}
 
 	sort.Slice(hits, func(i, j int) bool {

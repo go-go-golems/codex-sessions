@@ -239,13 +239,13 @@ func formatListLines(items []any, parseJSON bool) []string {
 			if s, ok := item.(string); ok {
 				var parsed any
 				if err := json.Unmarshal([]byte(s), &parsed); err == nil {
-					switch parsed.(type) {
+					switch parsed := parsed.(type) {
 					case map[string]any, []any:
 						lines = append(lines, renderJSON(parsed, 0)...)
 						continue
 					case string:
-						if strings.Contains(parsed.(string), "\n") {
-							lines = append(lines, renderMultiline(parsed.(string), "")...)
+						if strings.Contains(parsed, "\n") {
+							lines = append(lines, renderMultiline(parsed, "")...)
 							continue
 						}
 					}
@@ -308,10 +308,6 @@ func renderCodeFenceBlock(contentLines []string) []string {
 
 func BuildMarkdown(paths []string, opts Options) ([]string, error) {
 	lines := []string{defaultHead, ""}
-
-	if opts.IncludeEntryMetadata == false && opts.IncludeRawPayload == false && len(opts.PayloadTypes) == 0 {
-		// keep as-is; explicit false is allowed. No-op guard not needed.
-	}
 
 	typeSet := map[string]bool{}
 	for _, t := range opts.PayloadTypes {

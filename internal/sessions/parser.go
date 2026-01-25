@@ -51,7 +51,7 @@ func ReadSessionMeta(path string) (SessionMeta, error) {
 	if err != nil {
 		return SessionMeta{}, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	if !scanner.Scan() {

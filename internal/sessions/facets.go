@@ -62,14 +62,14 @@ func DefaultFacetOptions() FacetOptions {
 	}
 }
 
-func truncateValue(s string, max int) string {
-	if max <= 0 || len(s) <= max {
+func truncateValue(s string, maxLen int) string {
+	if maxLen <= 0 || len(s) <= maxLen {
 		return s
 	}
-	if max <= 1 {
+	if maxLen <= 1 {
 		return "…"
 	}
-	return s[:max-1] + "…"
+	return s[:maxLen-1] + "…"
 }
 
 func normalizeTimestamp(ts string) (time.Time, bool) {
@@ -83,22 +83,22 @@ func normalizeTimestamp(ts string) (time.Time, bool) {
 	return t, true
 }
 
-func collectTextFields(value any, path []string, out *[]TextField, ts time.Time, max int) {
+func collectTextFields(value any, path []string, out *[]TextField, ts time.Time, maxValueChars int) {
 	switch v := value.(type) {
 	case map[string]any:
 		for k, val := range v {
 			childPath := append(path, k)
 			if k == "text" {
 				if s, ok := val.(string); ok {
-					*out = append(*out, TextField{Timestamp: ts, Source: strings.Join(childPath, "."), Text: truncateValue(s, max)})
+					*out = append(*out, TextField{Timestamp: ts, Source: strings.Join(childPath, "."), Text: truncateValue(s, maxValueChars)})
 				}
 			}
-			collectTextFields(val, childPath, out, ts, max)
+			collectTextFields(val, childPath, out, ts, maxValueChars)
 		}
 	case []any:
 		for i, item := range v {
 			childPath := append(path, "["+strconv.Itoa(i)+"]")
-			collectTextFields(item, childPath, out, ts, max)
+			collectTextFields(item, childPath, out, ts, maxValueChars)
 		}
 	}
 }
@@ -106,24 +106,6 @@ func collectTextFields(value any, path []string, out *[]TextField, ts time.Time,
 func maybeString(v any) (string, bool) {
 	s, ok := v.(string)
 	return s, ok && s != ""
-}
-
-func maybeInt(v any) (int, bool) {
-	switch x := v.(type) {
-	case float64:
-		return int(x), true
-	case int:
-		return x, true
-	case int64:
-		return int(x), true
-	case json.Number:
-		i, err := x.Int64()
-		if err != nil {
-			return 0, false
-		}
-		return int(i), true
-	}
-	return 0, false
 }
 
 func toolNameForObject(m map[string]any) string {
@@ -157,7 +139,7 @@ func marshalCompact(v any) string {
 	return string(b)
 }
 
-func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]ToolOutput, ts time.Time, max int) {
+func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]ToolOutput, ts time.Time, maxValueChars int) {
 	switch v := value.(type) {
 	case map[string]any:
 		name := toolNameForObject(v)
@@ -170,7 +152,7 @@ func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]T
 					}
 				}
 				if argsStr != "" {
-					*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, max)})
+					*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, maxValueChars)})
 				}
 			}
 			if out, ok := v["output"]; ok {
@@ -181,17 +163,17 @@ func collectToolCallsAndOutputs(value any, outCalls *[]ToolCall, outOutputs *[]T
 					}
 				}
 				if outStr != "" {
-					*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, max)})
+					*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars)})
 				}
 			}
 		}
 
 		for _, val := range v {
-			collectToolCallsAndOutputs(val, outCalls, outOutputs, ts, max)
+			collectToolCallsAndOutputs(val, outCalls, outOutputs, ts, maxValueChars)
 		}
 	case []any:
 		for _, item := range v {
-			collectToolCallsAndOutputs(item, outCalls, outOutputs, ts, max)
+			collectToolCallsAndOutputs(item, outCalls, outOutputs, ts, maxValueChars)
 		}
 	}
 }
@@ -202,7 +184,7 @@ func extractToolFromResponseItemPayload(
 	outCalls *[]ToolCall,
 	outOutputs *[]ToolOutput,
 	callIDToName map[string]string,
-	max int,
+	maxValueChars int,
 ) bool {
 	payloadType, _ := payload["type"].(string)
 	switch payloadType {
@@ -220,7 +202,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if inStr != "" {
-				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(inStr, max)})
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(inStr, maxValueChars)})
 			}
 		}
 		if callID, ok := maybeString(payload["call_id"]); ok {
@@ -244,7 +226,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if outStr != "" {
-				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, max)})
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars)})
 			}
 		}
 		return true
@@ -264,7 +246,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if argsStr != "" {
-				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, max)})
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, maxValueChars)})
 			}
 		}
 		if callID, ok := maybeString(payload["call_id"]); ok {
@@ -292,7 +274,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if outStr != "" {
-				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, max)})
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars)})
 			}
 		}
 		return true
@@ -301,7 +283,7 @@ func extractToolFromResponseItemPayload(
 	}
 }
 
-func extractPathsFromMessages(msgs []Message, max int) []PathMention {
+func extractPathsFromMessages(msgs []Message, maxValueChars int) []PathMention {
 	seen := map[string]bool{}
 	var out []PathMention
 	for _, m := range msgs {
@@ -311,23 +293,23 @@ func extractPathsFromMessages(msgs []Message, max int) []PathMention {
 				continue
 			}
 			seen[key] = true
-			out = append(out, PathMention{Timestamp: m.Timestamp, Path: truncateValue(p, max), Source: "message", Role: m.Role})
+			out = append(out, PathMention{Timestamp: m.Timestamp, Path: truncateValue(p, maxValueChars), Source: "message", Role: m.Role})
 		}
 	}
 	return out
 }
 
-func extractErrorsFromMessages(msgs []Message, max int) []ErrorSignal {
+func extractErrorsFromMessages(msgs []Message, maxValueChars int) []ErrorSignal {
 	var out []ErrorSignal
 	for _, m := range msgs {
 		for _, sig := range FindErrorSignals(m.Text) {
-			out = append(out, ErrorSignal{Timestamp: m.Timestamp, Kind: sig.Kind, Snippet: truncateValue(sig.Snippet, max), Source: "message"})
+			out = append(out, ErrorSignal{Timestamp: m.Timestamp, Kind: sig.Kind, Snippet: truncateValue(sig.Snippet, maxValueChars), Source: "message"})
 		}
 	}
 	return out
 }
 
-func extractPathsFromToolStrings(calls []ToolCall, outs []ToolOutput, max int, limit int) []PathMention {
+func extractPathsFromToolStrings(calls []ToolCall, outs []ToolOutput, maxValueChars int, limit int) []PathMention {
 	seen := map[string]bool{}
 	var out []PathMention
 	add := func(ts time.Time, src string, text string) {
@@ -337,7 +319,7 @@ func extractPathsFromToolStrings(calls []ToolCall, outs []ToolOutput, max int, l
 				continue
 			}
 			seen[key] = true
-			out = append(out, PathMention{Timestamp: ts, Path: truncateValue(p, max), Source: src, Role: "unknown"})
+			out = append(out, PathMention{Timestamp: ts, Path: truncateValue(p, maxValueChars), Source: src, Role: "unknown"})
 			if limit > 0 && len(out) >= limit {
 				return
 			}
@@ -358,11 +340,11 @@ func extractPathsFromToolStrings(calls []ToolCall, outs []ToolOutput, max int, l
 	return out
 }
 
-func extractErrorsFromToolStrings(outs []ToolOutput, max int, limit int) []ErrorSignal {
+func extractErrorsFromToolStrings(outs []ToolOutput, maxValueChars int, limit int) []ErrorSignal {
 	var out []ErrorSignal
 	for _, o := range outs {
 		for _, sig := range FindErrorSignals(o.Output) {
-			out = append(out, ErrorSignal{Timestamp: o.Timestamp, Kind: sig.Kind, Snippet: truncateValue(sig.Snippet, max), Source: "tool"})
+			out = append(out, ErrorSignal{Timestamp: o.Timestamp, Kind: sig.Kind, Snippet: truncateValue(sig.Snippet, maxValueChars), Source: "tool"})
 			if limit > 0 && len(out) >= limit {
 				return out
 			}

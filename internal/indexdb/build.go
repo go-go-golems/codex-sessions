@@ -35,14 +35,14 @@ type SessionBuildResult struct {
 	Duration   time.Duration
 }
 
-func truncateForIndex(s string, max int) string {
-	if max <= 0 || len(s) <= max {
+func truncateForIndex(s string, maxChars int) string {
+	if maxChars <= 0 || len(s) <= maxChars {
 		return s
 	}
-	if max <= 1 {
+	if maxChars <= 1 {
 		return "…"
 	}
-	return s[:max-1] + "…"
+	return s[:maxChars-1] + "…"
 }
 
 func shouldReindex(existingUpdatedAt string, newUpdatedAt time.Time) bool {

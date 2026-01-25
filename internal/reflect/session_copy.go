@@ -92,9 +92,7 @@ func findRequestTitleIndex(lines []string) (int, bool) {
 
 func normalizeUserText(text string, prefix string) string {
 	normalized := text
-	if strings.HasPrefix(normalized, prefix) {
-		normalized = strings.TrimPrefix(normalized, prefix)
-	}
+	normalized = strings.TrimPrefix(normalized, prefix)
 	lines := strings.Split(normalized, "\n")
 	titleIdx, ok := findRequestTitleIndex(lines)
 	if !ok {
@@ -290,7 +288,7 @@ func copyFile(source string, dest string) error {
 	return dst.Close()
 }
 
-func CreateCopyWithNewID(sourcePath string, prefix string) (copyPath string, copyID string, err error) {
+func CreateCopyWithNewID(sourcePath string, prefix string) (string, string, error) {
 	ts := formatRolloutTimestamp(time.Now().UTC())
 	newID := uuid.NewString()
 	destDir := filepath.Dir(sourcePath)

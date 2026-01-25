@@ -43,10 +43,6 @@ func uniqueSorted(values []string) []string {
 
 // FindPathMentions returns a best-effort list of path-like strings in text.
 func FindPathMentions(text string) []string {
-	// Avoid matching paths inside URLs.
-	if strings.Contains(text, "http://") || strings.Contains(text, "https://") {
-		// still allow other matches; just don't treat URL bodies specially
-	}
 	matches := []string{}
 	matches = append(matches, reAbsPath.FindAllString(text, -1)...)
 	matches = append(matches, reRelPath.FindAllString(text, -1)...)
