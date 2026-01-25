@@ -13,15 +13,15 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T12:41:57.627057595-05:00
+LastUpdated: 2026-01-25T13:43:10-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
 # Tasks
 
-- [ ] Define CLI UX (`codex-sessions traces md` flags)
-- [ ] Implement trace excerpt extraction + truncation
-- [ ] Implement Markdown renderer (safe fenced blocks)
-- [ ] Add unit tests (fixtures for multiline/output)
+- [x] Define CLI UX (`codex-sessions traces md` flags)
+- [x] Implement trace excerpt extraction + truncation
+- [x] Implement Markdown renderer (safe fenced blocks)
+- [x] Add unit tests (fixtures for multiline/output)
 - [ ] Add smoke test report + upload to reMarkable
