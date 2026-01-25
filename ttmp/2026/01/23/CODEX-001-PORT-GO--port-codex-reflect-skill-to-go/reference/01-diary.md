@@ -1082,3 +1082,55 @@ continue.
 ### Technical details
 - Upload command used (via temp copy):
   - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-Index.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`
+
+## Step 18: Document Known Edge Cases + Limitations
+
+With indexing now in place, there are a few important semantics and guardrails that are easy to forget (especially “FTS token search vs substring scan” and the fact that facets are heuristic). I added a dedicated reference doc to keep these limitations explicit, and checked off the corresponding ticket task.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Keep pushing the ticket forward and close out remaining documentation tasks as we reach stable milestones.
+
+**Inferred user intent:** Avoid future confusion by writing down the sharp edges now, while the changes are fresh.
+
+**Commit (code):** N/A
+
+### What I did
+- Added ticket doc: `reference/04-known-edge-cases-and-limitations.md`
+- Covered:
+  - heuristic vs authoritative fields
+  - index vs scan search semantics
+  - indexing defaults (tool outputs opt-in)
+  - current reflection parity status (not yet implemented in Go)
+- Checked off task 69 (edge cases + limitations).
+
+### Why
+- These are the kinds of “gotchas” that waste time later if they’re only remembered implicitly.
+
+### What worked
+- Doc is now in the ticket and cross-linked to the relevant code paths.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- Whether the default for `--include-tool-outputs` in indexing is the right balance for this repo’s usage patterns.
+
+### What should be done in the future
+- Revisit this doc once `reflect` is implemented in Go to document any intentional parity differences.
+
+### Code review instructions
+- Review:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/04-known-edge-cases-and-limitations.md`

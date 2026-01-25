@@ -93,4 +93,4 @@
 
 - [x] Add parser unit tests with small fixtures (redacted)
 - [x] Validate against a real `~/.codex/sessions` archive (local)
-- [ ] Document known edge cases + limitations in the ticket
+- [x] Document known edge cases + limitations in the ticket

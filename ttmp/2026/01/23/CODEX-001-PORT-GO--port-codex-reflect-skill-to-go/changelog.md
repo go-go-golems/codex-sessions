@@ -133,3 +133,12 @@ Update smoke test report for SQLite/FTS indexing and upload PDF to reMarkable
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added index follow-up run section and captured artifacts
 
+
+## 2026-01-25
+
+Add edge cases + limitations reference doc (task 69)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/04-known-edge-cases-and-limitations.md — Documented index-vs-scan semantics and heuristic extraction limitations
+
