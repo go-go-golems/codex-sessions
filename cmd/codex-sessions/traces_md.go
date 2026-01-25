@@ -31,7 +31,7 @@ type TracesMDSettings struct {
 	Limit             int    `glazed.parameter:"limit"`
 	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
 
-	Output         string `glazed.parameter:"output"`
+	MDOutput       string `glazed.parameter:"md-output"`
 	EntriesPerFile int    `glazed.parameter:"entries-per-file"`
 	MaxStrLen      int    `glazed.parameter:"max-str-len"`
 	MaxListLen     int    `glazed.parameter:"max-list-len"`
@@ -99,10 +99,10 @@ This is a Go port of scripts/parse_traces.py and is intended for schema debuggin
 				fields.WithHelp("Include the most recent session (enabled by default for traces)"),
 			),
 			fields.New(
-				"output",
+				"md-output",
 				fields.TypeString,
 				fields.WithDefault("trace_examples.md"),
-				fields.WithHelp("Output path for the generated markdown (or '-' for stdout)"),
+				fields.WithHelp("Markdown output path for the generated report (or '-' for stdout)"),
 			),
 			fields.New(
 				"entries-per-file",
@@ -244,12 +244,12 @@ func (c *TracesMDCommand) RunIntoGlazeProcessor(
 		content += "\n"
 	}
 
-	if settings.Output == "-" {
+	if settings.MDOutput == "-" {
 		fmt.Print(content)
 		return nil
 	}
 
-	outPath := filepath.Clean(settings.Output)
+	outPath := filepath.Clean(settings.MDOutput)
 	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
 		return err
 	}
