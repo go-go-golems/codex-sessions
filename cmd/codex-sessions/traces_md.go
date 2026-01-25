@@ -35,6 +35,9 @@ type TracesMDSettings struct {
 	EntriesPerFile int    `glazed.parameter:"entries-per-file"`
 	MaxStrLen      int    `glazed.parameter:"max-str-len"`
 	MaxListLen     int    `glazed.parameter:"max-list-len"`
+	IncludeMeta    bool   `glazed.parameter:"include-entry-metadata"`
+	PayloadTypes   string `glazed.parameter:"payload-types"`
+	IncludeRaw     bool   `glazed.parameter:"include-raw-payload"`
 }
 
 type TracesMDCommand struct {
@@ -109,6 +112,24 @@ This is a Go port of scripts/parse_traces.py and is intended for schema debuggin
 				fields.TypeInteger,
 				fields.WithDefault(20),
 				fields.WithHelp("Number of response_item entries to include per session file"),
+			),
+			fields.New(
+				"include-entry-metadata",
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Include entry metadata (line_no, timestamp, tool_name when present)"),
+			),
+			fields.New(
+				"payload-types",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Comma-separated response_item payload.type values to include (empty = all)"),
+			),
+			fields.New(
+				"include-raw-payload",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include a truncated rendering of the raw payload object"),
 			),
 			fields.New(
 				"max-str-len",
@@ -231,9 +252,12 @@ func (c *TracesMDCommand) RunIntoGlazeProcessor(
 	}
 
 	mdLines, err := tracesmd.BuildMarkdown(paths, tracesmd.Options{
-		EntriesPerFile: settings.EntriesPerFile,
-		MaxStrLen:      settings.MaxStrLen,
-		MaxListLen:     settings.MaxListLen,
+		EntriesPerFile:       settings.EntriesPerFile,
+		MaxStrLen:            settings.MaxStrLen,
+		MaxListLen:           settings.MaxListLen,
+		IncludeEntryMetadata: settings.IncludeMeta,
+		PayloadTypes:         parseCSVIDs(settings.PayloadTypes),
+		IncludeRawPayload:    settings.IncludeRaw,
 	})
 	if err != nil {
 		return err

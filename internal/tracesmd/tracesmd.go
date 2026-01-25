@@ -22,6 +22,10 @@ type Options struct {
 	EntriesPerFile int
 	MaxStrLen      int
 	MaxListLen     int
+
+	IncludeEntryMetadata bool
+	PayloadTypes         []string
+	IncludeRawPayload    bool
 }
 
 func truncateStrings(value any, limit int) any {
@@ -305,6 +309,18 @@ func renderCodeFenceBlock(contentLines []string) []string {
 func BuildMarkdown(paths []string, opts Options) ([]string, error) {
 	lines := []string{defaultHead, ""}
 
+	if opts.IncludeEntryMetadata == false && opts.IncludeRawPayload == false && len(opts.PayloadTypes) == 0 {
+		// keep as-is; explicit false is allowed. No-op guard not needed.
+	}
+
+	typeSet := map[string]bool{}
+	for _, t := range opts.PayloadTypes {
+		tt := strings.TrimSpace(t)
+		if tt != "" {
+			typeSet[tt] = true
+		}
+	}
+
 	for _, p := range paths {
 		p = filepath.Clean(p)
 		meta, _ := sessions.ReadSessionMeta(p)
@@ -349,13 +365,28 @@ func BuildMarkdown(paths []string, opts Options) ([]string, error) {
 			if payload == nil {
 				return nil
 			}
-			entryIndex++
 			payloadType, _ := payload["type"].(string)
+			if len(typeSet) > 0 && !typeSet[payloadType] {
+				return nil
+			}
+
+			entryIndex++
 			style := "payload/unknown"
 			if strings.TrimSpace(payloadType) != "" {
 				style = "payload/" + payloadType
 			}
 			lines = append(lines, fmt.Sprintf("### Entry %d (%s)", entryIndex, style))
+
+			if opts.IncludeEntryMetadata {
+				lines = append(lines, fmt.Sprintf("- line_no: %d", line.LineNo))
+				if strings.TrimSpace(line.Timestamp) != "" {
+					lines = append(lines, fmt.Sprintf("- timestamp: %s", line.Timestamp))
+				}
+				if tn, ok := payload["tool_name"].(string); ok && strings.TrimSpace(tn) != "" {
+					lines = append(lines, fmt.Sprintf("- tool_name: %s", tn))
+				}
+				lines = append(lines, "")
+			}
 
 			viewAny := any(buildPayloadView(payload))
 			viewAny = truncateLists(viewAny, opts.MaxListLen)
@@ -379,6 +410,15 @@ func BuildMarkdown(paths []string, opts Options) ([]string, error) {
 			if len(outputs) > 0 {
 				lines = append(lines, "**output**")
 				block := renderCodeFenceBlock(formatListLines(outputs, false))
+				lines = append(lines, block...)
+			}
+
+			if opts.IncludeRawPayload {
+				lines = append(lines, "**payload**")
+				payloadAny := truncateLists(any(payload), opts.MaxListLen)
+				payloadAny = truncateStrings(payloadAny, opts.MaxStrLen)
+				payloadLines := renderJSON(payloadAny, 0)
+				block := renderCodeFenceBlock(payloadLines)
 				lines = append(lines, block...)
 			}
 

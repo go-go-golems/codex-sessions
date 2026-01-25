@@ -46,3 +46,41 @@ func TestTruncation_TruncatesStringsAndLists(t *testing.T) {
 		t.Fatalf("expected truncated list length 3, got %d", len(l))
 	}
 }
+
+func TestBuildMarkdown_MetadataFilteringAndRawPayload(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "rollout-2026-01-01T00-00-00-a.jsonl")
+	content := `{"type":"session_meta","payload":{"id":"a","timestamp":"2026-01-01T00:00:00Z","cwd":"/tmp/proj"}}` + "\n" +
+		`{"type":"response_item","timestamp":"2026-01-01T00:00:01Z","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"hello"}]}}` + "\n" +
+		`{"type":"response_item","timestamp":"2026-01-01T00:00:02Z","payload":{"type":"tool_result","tool_name":"functions.shell_command","output":"ok"}}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	lines, err := BuildMarkdown([]string{path}, Options{
+		EntriesPerFile:       10,
+		MaxStrLen:            0,
+		MaxListLen:           0,
+		IncludeEntryMetadata: true,
+		PayloadTypes:         []string{"tool_result"},
+		IncludeRawPayload:    true,
+	})
+	if err != nil {
+		t.Fatalf("BuildMarkdown: %v", err)
+	}
+	rendered := strings.Join(lines, "\n")
+
+	// Filter should include only the tool_result entry.
+	if strings.Count(rendered, "### Entry") != 1 {
+		t.Fatalf("expected exactly 1 entry after filtering, got:\n%s", rendered)
+	}
+	if !strings.Contains(rendered, "- line_no:") || !strings.Contains(rendered, "- timestamp: 2026-01-01T00:00:02Z") {
+		t.Fatalf("expected entry metadata, got:\n%s", rendered)
+	}
+	if !strings.Contains(rendered, "- tool_name: functions.shell_command") {
+		t.Fatalf("expected tool_name metadata, got:\n%s", rendered)
+	}
+	if !strings.Contains(rendered, "**payload**") {
+		t.Fatalf("expected raw payload section, got:\n%s", rendered)
+	}
+}
