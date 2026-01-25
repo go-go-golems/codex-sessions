@@ -11,7 +11,7 @@ import (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "codex-sessions",
+		Use:   "codex-session",
 		Short: "Query and reflect on Codex session histories",
 	}
 

@@ -11,5 +11,5 @@ trace_examples.md
 build/
 dist/
 *.egg-info/
-/codex-sessions
-/codex-sessions.exe
+/codex-session
+/codex-session.exe
