@@ -161,3 +161,63 @@ Keep writing your diary.
   - `scripts/session_io.py`
   - `scripts/cleanup_reflection_copies.py`
   - `scripts/parse_traces.py`
+
+## Step 3: Create Follow-up Implementation Tickets
+
+Based on the gap analysis, I created three focused implementation tickets to capture the highest-impact follow-ups (reflection copy detection/cleanup, traces markdown export, and parallel reflect execution), plus a small ticket to introduce a plugin system (starting with project-name extraction).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+tickets/tasks:
+- i like the reflection copy detection and cleanup. Add a new ticket and tasks to build it, along with a clear spec doc.
+- add a traces markdown export ticket, with tasks and clear doc.
+- add parallel execution, similarly in a new ticket.
+```
+
+**Assistant interpretation:** Create dedicated tickets for each follow-up feature, each with a clear spec and task list, so work can be tracked and reviewed cleanly.
+
+**Inferred user intent:** Break remaining improvements into small, well-scoped deliverables rather than a single sprawling ticket.
+
+**Commit (code):** N/A
+
+### What I did
+- Created:
+  - `CODEX-003-REFLECTION-COPY-HYGIENE`
+  - `CODEX-004-TRACES-MD-EXPORT`
+  - `CODEX-005-PARALLEL-REFLECT`
+  - `CODEX-006-PLUGIN-SYSTEM`
+- Added spec + tasks docs in each ticket.
+
+### Why
+- Smaller tickets reduce context switching and make it easier to review/merge incremental changes.
+
+### What worked
+- Ticket workspaces and initial docs were created successfully.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Implement the follow-up tickets in priority order:
+  1) reflection copy hygiene
+  2) parallel reflect
+  3) traces markdown export
+
+### Code review instructions
+- Review ticket stubs:
+  - `ttmp/2026/01/25/CODEX-003-REFLECTION-COPY-HYGIENE--reflection-copy-detection-cleanup/index.md`
+  - `ttmp/2026/01/25/CODEX-004-TRACES-MD-EXPORT--traces-markdown-export/index.md`
+  - `ttmp/2026/01/25/CODEX-005-PARALLEL-REFLECT--parallel-execution-for-codex-sessions-reflect/index.md`
+  - `ttmp/2026/01/25/CODEX-006-PLUGIN-SYSTEM--plugin-system/index.md`
