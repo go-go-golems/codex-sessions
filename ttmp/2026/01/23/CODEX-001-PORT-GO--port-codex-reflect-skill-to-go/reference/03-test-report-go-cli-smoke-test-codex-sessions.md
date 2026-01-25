@@ -21,22 +21,27 @@ RelatedFiles:
       Note: CLI entrypoint
     - Path: cmd/codex-sessions/projects.go
       Note: Projects command
+    - Path: cmd/codex-sessions/reflect.go
+      Note: Reflect command tested (commit 80e630b)
     - Path: cmd/codex-sessions/search.go
       Note: Search command
     - Path: cmd/codex-sessions/show.go
       Note: Show command
     - Path: internal/indexdb
       Note: Index implementation
+    - Path: internal/reflect
+      Note: Reflection pipeline implementation
     - Path: internal/sessions
       Note: Parsing and normalization
     - Path: internal/sessions/facets.go
       Note: Tool facet extraction fixed for custom_tool_call shapes (commit 39e2894)
 ExternalSources: []
-Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search/export/index).
+Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search/export/index/reflect).
 LastUpdated: 2026-01-24T19:20:47.940213553-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -212,6 +217,39 @@ go run ./cmd/codex-sessions search --query Create --scope messages --max-results
 - `/tmp/codex_index_stats.json` (index stats row)
 - `/tmp/codex_index_search_tools.json` (indexed search, tools scope)
 - `/tmp/codex_index_search_messages.json` (indexed search, messages scope)
+
+## Follow-up Run: Reflect (Cache + Codex Resume)
+
+**Date run:** 2026-01-25 (UTC)
+
+**Git HEAD tested:** `80e630b`
+
+### Commands executed
+
+```bash
+go test ./... -count=1
+
+# Dry run (no codex invocation)
+go run ./cmd/codex-sessions reflect --dry-run --include-most-recent --limit 2 --extra-metadata --output table
+
+# Real run (one session id)
+go run ./cmd/codex-sessions reflect --session-id 019bf592-c4a2-7972-8e78-3c566986b19f --extra-metadata --codex-timeout-seconds 120 --output json > /tmp/codex_reflect_one.json
+
+# Cache reuse check
+go run ./cmd/codex-sessions reflect --session-id 019bf592-c4a2-7972-8e78-3c566986b19f --output json > /tmp/codex_reflect_one_cached.json
+```
+
+### Results summary
+
+- `go test`: PASS
+- `reflect --dry-run`: OK (selection + cache paths computed without running codex)
+- `reflect` (one session): OK (reflection generated; cache entry created under `~/.codex/sessions/reflection_cache/`)
+- `reflect` (second run): OK (returns `status=cached`, `cached=true`)
+
+### Captured artifacts
+
+- `/tmp/codex_reflect_one.json` (reflection row + metadata)
+- `/tmp/codex_reflect_one_cached.json` (cache reuse check)
 
 ## Usage Examples
 

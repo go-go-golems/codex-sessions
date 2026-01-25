@@ -61,21 +61,21 @@
 
 ### Phase 5: Reflection parity (Codex exec resume) + caching
 
-- [ ] Port prompt selection:
-  - [ ] presets (`reflection`, `summary`, `bloat`, `incomplete`, `decisions`, `next_steps`)
-  - [ ] `--prompt-file`
-  - [ ] `--prompt-text` inline
-- [ ] Port prompt version state tracking (per preset/file + inline prompts)
-- [ ] Implement cache:
-  - [ ] `reflection_cache/<session_id>-<prompt_key>.json`
-  - [ ] legacy cache reuse only for default prompt
-  - [ ] refresh-mode: `never|auto|always`
-- [ ] Implement reflection generation:
-  - [ ] duplicate session JSONL with new UUID + sync session_meta id
-  - [ ] prefix first user message with `[SELF-REFLECTION] ` (match Python behavior)
-  - [ ] run `codex exec ... resume <copy_id> -` (stdin prompt)
-  - [ ] parse reflection from last assistant message
-  - [ ] delete copy
+- [x] Port prompt selection:
+- [x] presets (`reflection`, `summary`, `bloat`, `incomplete`, `decisions`, `next_steps`)
+- [x] `--prompt-file`
+- [x] `--prompt-text` inline
+- [x] Port prompt version state tracking (per preset/file + inline prompts)
+- [x] Implement cache:
+- [x] `reflection_cache/<session_id>-<prompt_key>.json`
+- [x] legacy cache reuse only for default prompt
+- [x] refresh-mode: `never|auto|always`
+- [x] Implement reflection generation:
+- [x] duplicate session JSONL with new UUID + sync session_meta id
+- [x] prefix first user message with `[SELF-REFLECTION] ` (match Python behavior)
+- [x] run `codex exec ... resume <copy_id> -` (stdin prompt)
+- [x] parse reflection from last assistant message
+- [x] delete copy
 
 ### Phase 6: Glazed CLI suite
 
@@ -87,7 +87,7 @@
 - [x] `export` (normalized JSON or rows)
 - [x] `search` (index-backed or streaming)
 - [x] `index build` / `index stats`
-  - [ ] `reflect` (parity with Python reflect behavior)
+- [x] `reflect` (parity with Python reflect behavior)
 
 ### Phase 7: Validation + tests
 

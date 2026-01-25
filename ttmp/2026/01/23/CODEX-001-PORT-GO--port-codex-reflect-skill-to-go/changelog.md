@@ -142,3 +142,22 @@ Add edge cases + limitations reference doc (task 69)
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/04-known-edge-cases-and-limitations.md — Documented index-vs-scan semantics and heuristic extraction limitations
 
+
+## 2026-01-25
+
+Implement reflect command with prompt selection/versioning, cache semantics, and codex resume execution (commit 80e630b)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/reflect.go — New reflect command and cache output fields
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/reflect — Prompt/cache/codex/copy implementation
+
+
+## 2026-01-25
+
+Update smoke test report for reflect and upload PDF to reMarkable
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added reflect follow-up run section and uploaded PDF
+

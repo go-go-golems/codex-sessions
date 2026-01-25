@@ -15,10 +15,20 @@ RelatedFiles:
       Note: Index build CLI (commit e9d44ff)
     - Path: cmd/codex-sessions/index_stats.go
       Note: Index stats CLI (commit e9d44ff)
+    - Path: cmd/codex-sessions/reflect.go
+      Note: Reflect command (commit 80e630b)
     - Path: internal/indexdb/build.go
       Note: Incremental per-session index build (commit e9d44ff)
     - Path: internal/indexdb/search.go
       Note: FTS search across messages/tools (commit e9d44ff)
+    - Path: internal/reflect/cache.go
+      Note: Cache decision logic + schema (commit 80e630b)
+    - Path: internal/reflect/codex.go
+      Note: Codex binary resolution and exec runner (commit 80e630b)
+    - Path: internal/reflect/prompt.go
+      Note: Prompt selection + version state (commit 80e630b)
+    - Path: internal/reflect/session_copy.go
+      Note: Session copy + prefix logic (commit 80e630b)
     - Path: internal/sessions/facets.go
       Note: Schema-aware tool call extraction + call_id correlation (commit 39e2894)
     - Path: internal/sessions/facets_test.go
@@ -35,6 +45,7 @@ LastUpdated: 2026-01-23T23:49:13.628148877-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -1134,3 +1145,131 @@ continue.
 ### Code review instructions
 - Review:
   - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/04-known-edge-cases-and-limitations.md`
+
+## Step 19: Implement `codex-sessions reflect` (Prompt + Cache + Codex Resume Parity)
+
+I implemented the core “reflect” pipeline in Go: prompt selection, prompt version state tracking, reflection caching keyed by session+prompt, and the actual generation step that branches a session file and runs `codex exec resume` to produce a reflection. This brings the Go CLI close to parity with the original Python reflection tool, while keeping Glazed row output.
+
+I validated the implementation with a dry-run over recent sessions (to confirm selection and cache path computation) and a real one-session reflection generation, verifying that a cache entry is written and that subsequent runs reuse the cache.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Implement the remaining big missing piece: reflection parity (prompt/caching/codex execution) so the Go port can fully replace the Python tool.
+
+**Inferred user intent:** Make the Go CLI end-to-end useful: query sessions, export data, optionally index for speed, and generate cached reflections in the same tool.
+
+**Commit (code):** 80e630b — "go: add reflect command with prompt+cache parity"
+
+### What I did
+- Added `codex-sessions reflect` with:
+  - selection: project/date/limit/include-most-recent or explicit `--session-id` / `--session-ids`
+  - prompt selection: `--prompt-preset`, `--prompt-file`, `--prompt-text`
+  - prompt version tracking stored under cache dir (`reflection_cache/prompt_versions/...`)
+  - caching: `<sessions-root>/reflection_cache/<session_id>-<prompt_key>.json`
+  - legacy cache reuse for default prompt (when present)
+  - refresh modes: `never|auto|always`
+  - codex execution flags: `--codex-sandbox`, `--codex-approval`, `--codex-timeout-seconds`, `--codex-path`
+  - `--dry-run` to compute cache status without invoking codex
+- Implemented the reflection generation mechanics:
+  - duplicate session JSONL with a new UUID
+  - sync session_meta id in the duplicated file
+  - prefix the first user message request title with `[SELF-REFLECTION] ` (matching the Python logic)
+  - run `codex exec --skip-git-repo-check resume <copy_id> -` with prompt on stdin
+  - extract reflection from the last assistant message
+  - delete the copy
+- Ran validation commands:
+  - dry-run for recent sessions
+  - real reflection generation for one session id; verified cache file exists afterward
+
+### Why
+- Reflection is the flagship feature of the original skill, and it is also the key integration point for “LLM-assisted recall” when raw search/extraction isn’t enough.
+
+### What worked
+- Dry-run correctly reports cache paths and statuses without requiring codex.
+- Real run produced a non-empty reflection and wrote a cache entry, and the subsequent run reused it.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- The cache freshness check can legitimately mark a just-generated reflection as out-of-date if the underlying session continues to receive new events after the reflection is generated (expected for in-progress sessions; `refresh-mode=never` still reuses cache).
+
+### What was tricky to build
+- Prefixing the request title line is more subtle than “just prepend a prefix”: when the user message contains `## my request for codex:` the prefix must be applied to the next non-empty line, and the tool may need to update both `event_msg` and `response_item` user messages when both representations exist.
+
+### What warrants a second pair of eyes
+- Whether the prompt preset/version tracking location under cache dir (instead of the prompts directory) is the right long-term decision for parity and portability.
+
+### What should be done in the future
+- Add a “cleanup reflection copies” helper (like the Python repo) as a safety net in case a crash leaves copies behind.
+
+### Code review instructions
+- Start with:
+  - `cmd/codex-sessions/reflect.go`
+  - `internal/reflect/session_copy.go`
+  - `internal/reflect/codex.go`
+  - `internal/reflect/cache.go`
+- Validate:
+  - `go run ./cmd/codex-sessions reflect --dry-run --include-most-recent --limit 2 --extra-metadata --output table`
+  - `go run ./cmd/codex-sessions reflect --session-id <uuid> --output json`
+
+## Step 20: Extend Test Report With Reflect Validation and Upload PDF
+
+After implementing `reflect`, I updated the ticket’s smoke-test report to include a follow-up run covering both dry-run and a real single-session reflection generation (including cache reuse). This ensures reviewers have a concrete “how to validate” recipe and captured artifacts.
+
+I also uploaded the updated report to reMarkable as a new PDF under the same ticket folder.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Keep the ticket’s validation artifacts current as new major features land.
+
+**Inferred user intent:** Make verification repeatable and keep important docs readable off-screen (reMarkable).
+
+**Commit (code):** N/A
+
+### What I did
+- Updated: `reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+  - added “Follow-up Run: Reflect (Cache + Codex Resume)” section (commit `80e630b`)
+- Uploaded to reMarkable:
+  - `/ai/2026/01/25/CODEX-001-PORT-GO/CODEX-001-Go-CLI-Smoke-Test-Reflect.pdf`
+
+### Why
+- Reflection is a high-impact feature; it needs explicit validation evidence in the ticket.
+
+### What worked
+- `remarquee upload md` succeeded and produced a readable PDF.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Add a “failure modes” section for reflect (timeout, codex missing, copy cleanup) once we’ve seen real failures.
+
+### Code review instructions
+- Review:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+
+### Technical details
+- Upload command used (via temp copy):
+  - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-Reflect.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`
