@@ -34,7 +34,15 @@ Started by confirming `CODEX-001-PORT-GO` is already complete and closing it (id
 
 ### Prompt Context
 
-**User prompt (verbatim):** "ANything left in the ticket? if not close it. If so, do it.\n\nThen create a new ticket CODEX-002-REVIEW-WORK and analyze what features in the original scripts and prompts we haven't imported into our tool, and what we could do about it. Write a detailed analysis document and store it in the new ticket.\n\nKeep writing your diary."
+**User prompt (verbatim):**
+
+```text
+ANything left in the ticket? if not close it. If so, do it.
+
+Then create a new ticket CODEX-002-REVIEW-WORK and analyze what features in the original scripts and prompts we haven't imported into our tool, and what we could do about it. Write a detailed analysis document and store it in the new ticket.
+
+Keep writing your diary.
+```
 
 **Assistant interpretation:** Confirm CODEX-001 has no remaining work and close it; then create CODEX-002 and produce a detailed parity-gap analysis between Python and Go implementations, tracking the investigation in a diary.
 
@@ -92,7 +100,13 @@ This step intentionally focuses on “what’s missing” rather than implementi
 
 ### Prompt Context
 
-**User prompt (verbatim):** "Then create a new ticket CODEX-002-REVIEW-WORK and analyze what features in the original scripts and prompts we haven't imported into our tool, and what we could do about it. Write a detailed analysis document and store it in the new ticket.\n\nKeep writing your diary."
+**User prompt (verbatim):**
+
+```text
+Then create a new ticket CODEX-002-REVIEW-WORK and analyze what features in the original scripts and prompts we haven't imported into our tool, and what we could do about it. Write a detailed analysis document and store it in the new ticket.
+
+Keep writing your diary.
+```
 
 **Assistant interpretation:** Perform a parity review between the Python tool and the Go port, and write a detailed, actionable analysis doc inside the new ticket.
 
