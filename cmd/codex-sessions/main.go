@@ -180,6 +180,29 @@ func main() {
 	}
 	cleanupCmd.AddCommand(cobraCleanupReflectionCopiesCmd)
 
+	tracesCmd := &cobra.Command{
+		Use:   "traces",
+		Short: "Export curated trace reports",
+	}
+	rootCmd.AddCommand(tracesCmd)
+
+	tracesMDCmd, err := NewTracesMDCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating traces md command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraTracesMDCmd, err := cli.BuildCobraCommand(tracesMDCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra traces md command: %v\n", err)
+		os.Exit(1)
+	}
+	tracesCmd.AddCommand(cobraTracesMDCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
