@@ -100,6 +100,46 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraExportCmd)
 
+	indexCmd := &cobra.Command{
+		Use:   "index",
+		Short: "Build and inspect the local SQLite/FTS index",
+	}
+	rootCmd.AddCommand(indexCmd)
+
+	indexBuildCmd, err := NewIndexBuildCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating index build command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraIndexBuildCmd, err := cli.BuildCobraCommand(indexBuildCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra index build command: %v\n", err)
+		os.Exit(1)
+	}
+	indexCmd.AddCommand(cobraIndexBuildCmd)
+
+	indexStatsCmd, err := NewIndexStatsCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating index stats command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraIndexStatsCmd, err := cli.BuildCobraCommand(indexStatsCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra index stats command: %v\n", err)
+		os.Exit(1)
+	}
+	indexCmd.AddCommand(cobraIndexStatsCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"codex-reflect-skill/internal/indexdb"
 	"codex-reflect-skill/internal/sessions"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -19,11 +22,15 @@ import (
 
 type SearchSettings struct {
 	SessionsRoot      string `glazed.parameter:"sessions-root"`
+	IndexPath         string `glazed.parameter:"index-path"`
+	UseIndex          bool   `glazed.parameter:"use-index"`
+	Scope             string `glazed.parameter:"scope"`
 	Query             string `glazed.parameter:"query"`
 	Project           string `glazed.parameter:"project"`
 	Since             string `glazed.parameter:"since"`
 	Until             string `glazed.parameter:"until"`
 	Limit             int    `glazed.parameter:"limit"`
+	MaxResults        int    `glazed.parameter:"max-results"`
 	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
 	CaseSensitive     bool   `glazed.parameter:"case-sensitive"`
 	PerMessage        bool   `glazed.parameter:"per-message"`
@@ -38,8 +45,10 @@ type SearchCommand struct {
 func NewSearchCommand() (*SearchCommand, error) {
 	desc := cmds.NewCommandDescription(
 		"search",
-		cmds.WithShort("Search session messages (streaming scan)"),
-		cmds.WithLong(`Search through session message text by streaming session logs.
+		cmds.WithShort("Search sessions (index-backed when available)"),
+		cmds.WithLong(`Search through session message text and extracted facets.
+
+If a local SQLite/FTS index exists, it is used by default for speed. Otherwise, a streaming scan is used.
 
 This is a non-indexed fallback that scans messages extracted from event_msg/response_item entries.
 `),
@@ -49,6 +58,25 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeString,
 				fields.WithDefault(defaultSessionsRoot()),
 				fields.WithHelp("Root directory containing Codex session JSONL files"),
+			),
+			fields.New(
+				"index-path",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Path to SQLite index file (default: <sessions-root>/session_index.sqlite)"),
+			),
+			fields.New(
+				"use-index",
+				fields.TypeBool,
+				fields.WithDefault(true),
+				fields.WithHelp("Use SQLite/FTS index when present (falls back to streaming scan if missing)"),
+			),
+			fields.New(
+				"scope",
+				fields.TypeChoice,
+				fields.WithDefault("messages"),
+				fields.WithChoices("messages", "tools", "all"),
+				fields.WithHelp("Indexed mode only: search scope (messages/tools/all)"),
 			),
 			fields.New(
 				"query",
@@ -78,7 +106,13 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				"limit",
 				fields.TypeInteger,
 				fields.WithDefault(10),
-				fields.WithHelp("Limit to the most recent N sessions after filtering"),
+				fields.WithHelp("Streaming scan only: limit to the most recent N sessions after filtering"),
+			),
+			fields.New(
+				"max-results",
+				fields.TypeInteger,
+				fields.WithDefault(50),
+				fields.WithHelp("Indexed mode only: maximum number of matches to return"),
 			),
 			fields.New(
 				"include-most-recent",
@@ -160,6 +194,112 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 			s = s[:settings.MaxSnippetChars-1] + "…"
 		}
 		return s
+	}
+
+	indexPath := settings.IndexPath
+	if indexPath == "" {
+		indexPath = indexdb.DefaultIndexPath(settings.SessionsRoot)
+	}
+	indexPath = filepath.Clean(indexPath)
+
+	if settings.UseIndex && !settings.CaseSensitive {
+		if _, err := os.Stat(indexPath); err == nil {
+			db, err := indexdb.Open(indexPath)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = db.Close() }()
+			if err := indexdb.EnsureSchema(db); err != nil {
+				return err
+			}
+
+			scope := indexdb.ScopeMessages
+			switch settings.Scope {
+			case "tools":
+				scope = indexdb.ScopeTools
+			case "all":
+				scope = indexdb.ScopeAll
+			}
+
+			hits, err := indexdb.Search(ctx, db, indexdb.SearchOptions{
+				Query:      settings.Query,
+				MaxResults: settings.MaxResults,
+				Scope:      scope,
+				Project:    settings.Project,
+				Since:      since,
+				Until:      until,
+			})
+			if err != nil {
+				return err
+			}
+
+			if settings.PerMessage {
+				for _, h := range hits {
+					row := types.NewRow(
+						types.MRP("backend", "index"),
+						types.MRP("scope", settings.Scope),
+						types.MRP("match_kind", h.Kind),
+						types.MRP("session_id", h.SessionID),
+						types.MRP("project", h.Project),
+						types.MRP("conversation_started_at", h.StartedAt),
+						types.MRP("conversation_updated_at", h.UpdatedAt),
+						types.MRP("conversation_title", h.Title),
+						types.MRP("timestamp", h.Timestamp),
+						types.MRP("role", h.Role),
+						types.MRP("tool", h.Tool),
+						types.MRP("snippet", render(h.Snippet)),
+						types.MRP("score", h.Score),
+						types.MRP("source_path", filepath.Clean(h.SourcePath)),
+					)
+					if err := gp.AddRow(ctx, row); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+
+			type agg struct {
+				first    indexdb.SearchHit
+				count    int
+				minScore float64
+			}
+			bySession := map[string]*agg{}
+			order := make([]string, 0, len(hits))
+			for _, h := range hits {
+				a := bySession[h.SessionID]
+				if a == nil {
+					bySession[h.SessionID] = &agg{first: h, count: 1, minScore: h.Score}
+					order = append(order, h.SessionID)
+					continue
+				}
+				a.count++
+				if h.Score < a.minScore {
+					a.minScore = h.Score
+					a.first = h
+				}
+			}
+			for _, sid := range order {
+				a := bySession[sid]
+				h := a.first
+				row := types.NewRow(
+					types.MRP("backend", "index"),
+					types.MRP("scope", settings.Scope),
+					types.MRP("session_id", h.SessionID),
+					types.MRP("project", h.Project),
+					types.MRP("conversation_started_at", h.StartedAt),
+					types.MRP("conversation_updated_at", h.UpdatedAt),
+					types.MRP("conversation_title", h.Title),
+					types.MRP("match_count", a.count),
+					types.MRP("snippet", render(h.Snippet)),
+					types.MRP("score_min", a.minScore),
+					types.MRP("source_path", filepath.Clean(h.SourcePath)),
+				)
+				if err := gp.AddRow(ctx, row); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 	}
 
 	paths, err := sessions.DiscoverRolloutFiles(settings.SessionsRoot)
