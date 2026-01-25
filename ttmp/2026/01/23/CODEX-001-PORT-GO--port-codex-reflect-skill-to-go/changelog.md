@@ -170,3 +170,12 @@ Check off remaining umbrella task for CLI command suite (task 59); all tasks com
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/tasks.md — All tasks checked
 
+
+## 2026-01-25
+
+Run full-archive index build and record perf snapshot in test report
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added full index build (406 sessions) + perf snapshot
+

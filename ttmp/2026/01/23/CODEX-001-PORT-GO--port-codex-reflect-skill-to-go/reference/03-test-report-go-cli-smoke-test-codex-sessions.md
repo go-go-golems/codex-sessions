@@ -9,6 +9,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../../../../.codex/sessions/session_index.sqlite
+      Note: Full-archive index built during validation (406 sessions
     - Path: cmd/codex-sessions/export.go
       Note: Export command validated in follow-up run (commit 39e2894)
     - Path: cmd/codex-sessions/index_build.go
@@ -41,6 +43,7 @@ LastUpdated: 2026-01-24T19:20:47.940213553-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -250,6 +253,46 @@ go run ./cmd/codex-sessions reflect --session-id 019bf592-c4a2-7972-8e78-3c56698
 
 - `/tmp/codex_reflect_one.json` (reflection row + metadata)
 - `/tmp/codex_reflect_one_cached.json` (cache reuse check)
+
+## Follow-up Run: Full-Archive Index Build + Perf Snapshot
+
+**Date run:** 2026-01-25 (UTC)
+
+**Git HEAD tested:** `e5787ee`
+
+### Commands executed
+
+```bash
+# Full archive index build (~400 sessions)
+/usr/bin/time -p go run ./cmd/codex-sessions index build --include-most-recent --limit 0 --output json > /tmp/codex_index_build_full.json
+go run ./cmd/codex-sessions index stats --output json > /tmp/codex_index_stats_full.json
+
+# Perf snapshot (indexed vs scan)
+/usr/bin/time -p go run ./cmd/codex-sessions search --query apply_patch --scope tools --per-message --max-results 20 --output json > /tmp/codex_search_index_perf.json
+/usr/bin/time -p go run ./cmd/codex-sessions search --use-index=false --query apply_patch --include-most-recent --limit 50 --output json > /tmp/codex_search_scan_perf.json
+```
+
+### Results summary
+
+- Full index build time (from `time -p`): ~124.45s
+- Index size: ~120 MB (`~/.codex/sessions/session_index.sqlite`)
+- `index stats` (after build):
+  - sessions: 406
+  - messages: 10869
+  - tool_calls: 11646
+  - tool_outputs: 0 (not indexed by default)
+  - paths: 102187
+  - errors: 1478
+- Perf snapshot:
+  - indexed search (tools scope, 20 hits): ~0.15s
+  - scan search (substring, 50 sessions scanned): ~8.08s
+
+### Captured artifacts
+
+- `/tmp/codex_index_build_full.json` (index build rows, 406 sessions)
+- `/tmp/codex_index_stats_full.json` (index stats after full build)
+- `/tmp/codex_search_index_perf.json` (indexed search output)
+- `/tmp/codex_search_scan_perf.json` (scan backend output)
 
 ## Usage Examples
 

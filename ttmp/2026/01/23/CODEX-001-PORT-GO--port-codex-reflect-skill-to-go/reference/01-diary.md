@@ -1315,3 +1315,56 @@ continue.
 
 ### What should be done in the future
 - Close the ticket when ready: `docmgr ticket close --ticket CODEX-001-PORT-GO`
+
+## Step 22: Build Full Index (All Sessions) and Capture Performance Snapshot
+
+I built the SQLite/FTS index against the full local Codex archive so search can be fast across all sessions, and captured some simple timing measurements to quantify the benefit over the streaming scan backend. This is useful both as a confidence check and as a baseline for future tuning (schema changes, truncation defaults, indexing tool outputs, etc.).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+go ahea
+```
+
+**Assistant interpretation:** Proceed with the suggested next step: build the full archive index and update the ticket’s validation artifacts.
+
+**Inferred user intent:** Get the system into a “done and usable” state, with performance evidence and updated docs.
+
+**Commit (code):** N/A
+
+### What I did
+- Built a full index (406 sessions) and captured the output rows:
+  - `/usr/bin/time -p go run ./cmd/codex-sessions index build --include-most-recent --limit 0 --output json > /tmp/codex_index_build_full.json`
+  - `go run ./cmd/codex-sessions index stats --output json > /tmp/codex_index_stats_full.json`
+- Captured a small performance comparison:
+  - indexed search (FTS): `search --scope tools --per-message --max-results 20`
+  - scan backend (substring): `search --use-index=false --limit 50`
+- Updated the smoke-test report to include the full-index run and perf snapshot.
+
+### Why
+- The index is only “real” once it’s been built against the actual archive size and we have numbers for how it behaves.
+
+### What worked
+- Full index build completed successfully in ~124s and produced a ~120MB SQLite file.
+- Indexed search is dramatically faster than scan for typical “find tool invocation” queries.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- FTS is the right default for interactive search; scan remains useful for true substring matching.
+
+### What was tricky to build
+- N/A (operational run + reporting).
+
+### What warrants a second pair of eyes
+- Whether we should introduce an `index vacuum` / `index optimize` command for long-term size/perf maintenance.
+
+### What should be done in the future
+- Add a “full archive build” benchmark for `--include-tool-outputs` (opt-in) once we decide on a redaction policy.
+
+### Code review instructions
+- Review updated report section:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
