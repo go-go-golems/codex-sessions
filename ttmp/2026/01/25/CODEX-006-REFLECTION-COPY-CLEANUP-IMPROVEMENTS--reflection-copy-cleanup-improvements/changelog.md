@@ -14,3 +14,13 @@ Step 1: Create ticket, spec, tasks, and diary (commit 1371aa5)
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/design-doc/01-spec-reflection-copy-cleanup-improvements.md — Initial spec
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/reference/01-diary.md — Diary entry
 
+
+## 2026-01-25
+
+Step 2: Add trash mode, project/time filters, and richer output to cleanup reflection-copies (commit 2103497)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/cleanup_reflection_copies.go — CLI wiring
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/cleanup_reflection_copies.go — Core cleanup improvements
+

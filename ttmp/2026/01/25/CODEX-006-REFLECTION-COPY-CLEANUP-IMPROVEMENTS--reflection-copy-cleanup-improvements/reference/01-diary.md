@@ -11,16 +11,21 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: cmd/codex-sessions/cleanup_reflection_copies.go
+      Note: CLI flags and columns
+    - Path: internal/sessions/cleanup_reflection_copies.go
+      Note: Trash mode
     - Path: ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/design-doc/01-spec-reflection-copy-cleanup-improvements.md
       Note: Spec for cleanup improvements
     - Path: ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/tasks.md
       Note: Task tracking
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T14:01:28.266771528-05:00
+LastUpdated: 2026-01-25T14:06:20-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -74,3 +79,58 @@ This work is explicitly sequenced before traces enhancements (CODEX-007). Plugin
 
 ### Technical details
 - Ticket root: `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/index.md`
+
+## Step 2: Implement trash mode, filters, and richer cleanup output
+
+Extended the reflection copy cleanup pipeline to support a non-destructive “trash” mode, optional filtering by project/time, and richer output fields for auditability. This keeps the command safe-by-default while making it more practical on large archives and when you only want to clean up a specific incident window.
+
+The changes are implemented in the sessions package (so other tools can reuse the functionality) and exposed through the `codex-sessions cleanup reflection-copies` CLI.
+
+### Prompt Context
+
+**User prompt (verbatim):** "reflection copy cleanup improvements, then traces enhancements. The plugin stuff I need to design out before we start working on it"
+
+**Assistant interpretation:** Improve cleanup ergonomics first (trash, filters, better output), then move on to traces enhancements.
+
+**Inferred user intent:** Make cleanup safer and more targetable, especially for large archives and incident-driven cleanup.
+
+**Commit (code):** 2103497 — "Cleanup: add trash mode and filters"
+
+### What I did
+- Added cleanup `--mode delete|trash` (trash moves files to `<sessions-root>/trash/reflection-copies/YYYY/MM/DD/`).
+- Added filters: `--project`, `--since`, `--until`.
+- Added output fields: `size_bytes` and `dest_path`.
+- Added unit tests for trash mode and filter behavior.
+- Ran `go test ./... -count=1`.
+
+### Why
+- Trash mode provides a safer operational path than immediate deletion.
+- Filters reduce noise and runtime for large archives.
+- Size and destination improve auditability and help estimate disk reclaimed.
+
+### What worked
+- Unit tests passed, including new trash/filter tests.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Glazed’s output flag is global; using distinct flag names for “report output path” avoids collisions (applied earlier in CODEX-004, relevant here for future UX changes).
+
+### What was tricky to build
+- Making trash moves robust: prefer `os.Rename`, but fall back to copy+remove if needed.
+
+### What warrants a second pair of eyes
+- Verify the trash directory layout (`trash/reflection-copies/YYYY/MM/DD`) is acceptable and won’t conflict with future cleanup categories.
+- Confirm status strings (`would_trash`/`trashed`) won’t surprise downstream scripts that assumed only delete statuses.
+
+### What should be done in the future
+- Consider adding a `--max-bytes` safety cap (in addition to `--limit`) if needed.
+
+### Code review instructions
+- Start at `/home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/cleanup_reflection_copies.go` and `/home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/cleanup_reflection_copies.go`.
+- Validate with `go test ./... -count=1`.
+- Try a dry-run trash listing: `codex-sessions cleanup reflection-copies --mode trash`.
+
+### Technical details
+- New cleanup statuses: `would_delete`, `deleted`, `would_trash`, `trashed`, `error`.
