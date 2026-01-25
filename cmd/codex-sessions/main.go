@@ -100,6 +100,23 @@ func main() {
 	}
 	rootCmd.AddCommand(cobraExportCmd)
 
+	reflectCmd, err := NewReflectCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating reflect command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraReflectCmd, err := cli.BuildCobraCommand(reflectCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra reflect command: %v\n", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(cobraReflectCmd)
+
 	indexCmd := &cobra.Command{
 		Use:   "index",
 		Short: "Build and inspect the local SQLite/FTS index",
