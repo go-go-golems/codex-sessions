@@ -11,6 +11,14 @@ Owners: []
 RelatedFiles:
     - Path: cmd/codex-sessions/export.go
       Note: Implemented export command (commit 39e2894)
+    - Path: cmd/codex-sessions/index_build.go
+      Note: Index build CLI (commit e9d44ff)
+    - Path: cmd/codex-sessions/index_stats.go
+      Note: Index stats CLI (commit e9d44ff)
+    - Path: internal/indexdb/build.go
+      Note: Incremental per-session index build (commit e9d44ff)
+    - Path: internal/indexdb/search.go
+      Note: FTS search across messages/tools (commit e9d44ff)
     - Path: internal/sessions/facets.go
       Note: Schema-aware tool call extraction + call_id correlation (commit 39e2894)
     - Path: internal/sessions/facets_test.go
@@ -27,6 +35,7 @@ LastUpdated: 2026-01-23T23:49:13.628148877-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -944,3 +953,132 @@ run it for testing and see how well it works, write a test report when done, sto
 ### Technical details
 - Upload command used (via a temp copy):
   - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-FollowUp.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`
+
+## Step 16: Add SQLite/FTS Indexing + Index-Backed Search
+
+I implemented the Phase 4 optional index using SQLite + FTS5 so `codex-sessions search` can scale from “scan a handful of recent sessions” to fast full-archive queries. The index build is incremental by default (based on `conversation_updated_at`) and uses one transaction per session for performance and recoverability.
+
+This also adds a small `codex-sessions index` command group with `build` and `stats`, and updates `search` to use the index automatically when present (with a streaming fallback when it’s not).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Keep progressing through the remaining implementation tasks, prioritizing the next highest-impact features (indexing + faster search), while keeping commits and documentation up to date.
+
+**Inferred user intent:** Make the Go port meaningfully more useful for real “recall past sessions” workflows (interactive search across a large archive), with traceable progress (tasks/diary/commits).
+
+**Commit (code):** e9d44ff — "go: add sqlite/fts index build, stats, and search"
+
+### What I did
+- Added `internal/indexdb` (SQLite + FTS5):
+  - schema: sessions/messages/tool_calls/tool_outputs/paths/errors + FTS tables
+  - incremental per-session rebuild keyed by `conversation_updated_at`
+  - transactions per session
+  - FTS search across messages and tools
+- Added CLI commands:
+  - `codex-sessions index build`
+  - `codex-sessions index stats`
+- Updated `codex-sessions search`:
+  - uses index automatically when present (unless `--case-sensitive` is set)
+  - falls back to the existing streaming scan behavior if the index file is missing
+- Added index unit tests validating build + search + incremental/force behavior.
+
+### Why
+- Streaming scan is fine for “most recent N sessions”, but too slow for interactive search across a large archive.
+- SQLite/FTS provides a pragmatic “opt-in speed path” that keeps the tool local/offline and debuggable.
+
+### What worked
+- `go test ./... -count=1` passes with the new SQLite dependency.
+- Built a small sample index against real sessions (5 sessions) and verified:
+  - `index stats` shows expected row counts
+  - `search` reports `backend=index` rows when the index exists
+
+### What didn't work
+- N/A.
+
+### What I learned
+- FTS search semantics are token-based (not substring-based), so the indexed backend is “fast, but different”; the streaming scan remains available for substring matching.
+
+### What was tricky to build
+- Maintaining a simple, deterministic rebuild story: delete all per-session rows + rebuild inside one transaction keeps consistency and makes partial failures easier to reason about.
+
+### What warrants a second pair of eyes
+- Whether `--include-tool-outputs` should remain default false (safer for secrets and index size) vs default true (more complete recall). Right now it’s opt-in.
+
+### What should be done in the future
+- Extend indexed search with structured filters (path/error kind) without requiring FTS queries.
+- Add a larger “full archive” benchmark section to the test report once we build the index for all ~400 sessions.
+
+### Code review instructions
+- Start with:
+  - `internal/indexdb/schema.go`
+  - `internal/indexdb/build.go`
+  - `cmd/codex-sessions/index_build.go`
+  - `cmd/codex-sessions/search.go`
+- Validate:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions index build --limit 10 --include-most-recent --output table`
+  - `go run ./cmd/codex-sessions search --query apply --scope tools --per-message --max-results 5 --output table`
+
+### Technical details
+- Default index path: `<sessions-root>/session_index.sqlite` (e.g. `~/.codex/sessions/session_index.sqlite`)
+
+## Step 17: Update Test Report for Indexing and Upload to reMarkable
+
+After adding the SQLite/FTS index, I updated the ticket’s smoke test report to include a follow-up run that exercises `index build`, `index stats`, and index-backed `search`. This keeps the “proof” of correctness aligned with the current tool capabilities.
+
+I also uploaded the updated report to reMarkable as a new PDF (again avoiding overwrites/annotation loss by using a new basename).
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Keep the implementation moving forward and keep the documentation artifacts (diary/test report) current.
+
+**Inferred user intent:** Make it easy to review progress and verify behavior without re-running everything manually.
+
+**Commit (code):** N/A
+
+### What I did
+- Updated smoke-test report:
+  - added follow-up section for commit `e9d44ff` (index build/stats/search)
+- Uploaded the updated report to reMarkable:
+  - `/ai/2026/01/25/CODEX-001-PORT-GO/CODEX-001-Go-CLI-Smoke-Test-Index.pdf`
+
+### Why
+- Indexing changes the query strategy (FTS token matching), so it warrants an explicit validation record.
+
+### What worked
+- `remarquee upload md` succeeded and produced a readable PDF from the updated markdown.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- Glazed JSON output emits no bytes when there are zero rows; this is expected in this environment and is fine for “no results”.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Add a ticket doc that explains “FTS query vs substring scan” and recommends when to use each backend.
+
+### Code review instructions
+- Review:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+
+### Technical details
+- Upload command used (via temp copy):
+  - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-Index.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`

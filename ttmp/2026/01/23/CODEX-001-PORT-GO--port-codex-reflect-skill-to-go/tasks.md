@@ -51,13 +51,13 @@
 
 ### Phase 4: Optional indexing (SQLite + FTS)
 
-- [ ] Define SQLite schema for sessions/messages/tools/events
-- [ ] Implement `index build`:
-  - [ ] incremental refresh based on `conversation_updated_at`
-  - [ ] transactions per session for performance
-- [ ] Implement `search`:
-  - [ ] index-backed default when index exists
-  - [ ] streaming fallback when no index
+- [x] Define SQLite schema for sessions/messages/tools/events
+- [x] Implement `index build`:
+- [x] incremental refresh based on `conversation_updated_at`
+- [x] transactions per session for performance
+- [x] Implement `search`:
+- [x] index-backed default when index exists
+- [x] streaming fallback when no index
 
 ### Phase 5: Reflection parity (Codex exec resume) + caching
 
@@ -86,7 +86,7 @@
 - [x] `show` (timeline/tools/raw views as rows)
 - [x] `export` (normalized JSON or rows)
 - [x] `search` (index-backed or streaming)
-  - [ ] `index build` / `index stats`
+- [x] `index build` / `index stats`
   - [ ] `reflect` (parity with Python reflect behavior)
 
 ### Phase 7: Validation + tests

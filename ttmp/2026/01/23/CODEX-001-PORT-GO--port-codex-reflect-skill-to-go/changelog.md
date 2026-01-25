@@ -113,3 +113,23 @@ Update smoke test report for export/tool facets and upload follow-up PDF to reMa
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added follow-up run results for commit 39e2894 and exported artifacts
 
+
+## 2026-01-25
+
+Add SQLite/FTS indexing: index build/stats and index-backed search (commit e9d44ff)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/index_build.go — Glazed index build command
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/search.go — Search now uses index when available
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/indexdb/schema.go — SQLite schema (sessions/messages/tools/paths/errors + FTS)
+
+
+## 2026-01-25
+
+Update smoke test report for SQLite/FTS indexing and upload PDF to reMarkable
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added index follow-up run section and captured artifacts
+

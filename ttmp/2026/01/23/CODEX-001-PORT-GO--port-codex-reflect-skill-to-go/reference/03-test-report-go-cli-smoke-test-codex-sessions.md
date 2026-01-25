@@ -11,6 +11,10 @@ Owners: []
 RelatedFiles:
     - Path: cmd/codex-sessions/export.go
       Note: Export command validated in follow-up run (commit 39e2894)
+    - Path: cmd/codex-sessions/index_build.go
+      Note: Index build command tested (commit e9d44ff)
+    - Path: cmd/codex-sessions/index_stats.go
+      Note: Index stats command tested (commit e9d44ff)
     - Path: cmd/codex-sessions/list.go
       Note: List command
     - Path: cmd/codex-sessions/main.go
@@ -21,16 +25,19 @@ RelatedFiles:
       Note: Search command
     - Path: cmd/codex-sessions/show.go
       Note: Show command
+    - Path: internal/indexdb
+      Note: Index implementation
     - Path: internal/sessions
       Note: Parsing and normalization
     - Path: internal/sessions/facets.go
       Note: Tool facet extraction fixed for custom_tool_call shapes (commit 39e2894)
 ExternalSources: []
-Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search/export).
+Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search/export/index).
 LastUpdated: 2026-01-24T19:20:47.940213553-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -173,6 +180,38 @@ jq '.[0].document.facets.tool_outputs|length' /tmp/codex-export-facets.json
 
 - Real Codex sessions in this archive represent tool calls as `response_item.payload.type=custom_tool_call` and tool outputs as `custom_tool_call_output`, with linkage via `call_id`.
 - Tool output payloads do not necessarily include the tool name, so correct extraction requires correlating output rows to earlier calls using `call_id`.
+
+## Follow-up Run: SQLite/FTS Index (Build + Stats + Search)
+
+**Date run:** 2026-01-25 (UTC)
+
+**Git HEAD tested:** `e9d44ff`
+
+### Commands executed
+
+```bash
+go test ./... -count=1
+
+go run ./cmd/codex-sessions index build --include-most-recent --limit 5 --output json > /tmp/codex_index_build.json
+go run ./cmd/codex-sessions index stats --output json > /tmp/codex_index_stats.json
+
+go run ./cmd/codex-sessions search --query apply --scope tools --per-message --max-results 5 --output json > /tmp/codex_index_search_tools.json
+go run ./cmd/codex-sessions search --query Create --scope messages --max-results 5 --output json > /tmp/codex_index_search_messages.json
+```
+
+### Results summary
+
+- `go test`: PASS
+- `index build` (5 sessions): OK (rows show `status=indexed|skipped`, index file created/updated)
+- `index stats`: OK (shows row counts; last indexed timestamp present)
+- `search` (indexed): OK (emits `backend=index` and uses FTS scope selection)
+
+### Captured artifacts
+
+- `/tmp/codex_index_build.json` (index build rows)
+- `/tmp/codex_index_stats.json` (index stats row)
+- `/tmp/codex_index_search_tools.json` (indexed search, tools scope)
+- `/tmp/codex_index_search_messages.json` (indexed search, messages scope)
 
 ## Usage Examples
 
