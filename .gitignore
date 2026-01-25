@@ -1,7 +1,12 @@
+.DS_Store
+.idea/
+.vscode/
+
+.history/
+
 __pycache__/
 *.py[cod]
 *.pyd
-.DS_Store
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

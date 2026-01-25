@@ -1,96 +1,81 @@
-# Codex Reflect Skill
+# codex-session
 
-Generate reflections for past Codex session histories using the AutoSkill Reflection CLI.
-This skill helps surface repeated patterns, friction, and potential skill ideas from
-prior Codex conversations.
+Query, index, export, and reflect on Codex session histories stored in `~/.codex/sessions`.
 
-## What’s included
+## What it does
 
-- `SKILL.md`: guidance on when and how to use the skill
-- `scripts/`: the CLI tools (`reflect_sessions.py` and helpers)
-- `references/`: command catalog, usage notes, and examples
+- **Discover + list** sessions by project/date (`codex-session list`, `codex-session projects`)
+- **Search** across sessions:
+  - fast with an optional **SQLite/FTS** index (`codex-session index build`, `codex-session search`)
+  - fallback streaming scan when an index isn’t present
+- **Export** normalized shapes for downstream tooling (`codex-session export`)
+- **Generate reflections** via the `codex` CLI with caching (`codex-session reflect`)
+- **Clean up reflection copies** (dry-run by default; delete or trash) (`codex-session cleanup reflection-copies`)
+- **Generate trace reports** as readable Markdown (`codex-session traces md`)
 
-## Requirements
+## Install
 
-- Python 3.11+
-- A local Codex session archive in `~/.codex/sessions`
-- The `codex` binary available on your PATH (or pass `--codex-path`)
+### Homebrew
+
+This repo is intended to be released via GoReleaser and published to the go-go-golems Homebrew tap.
+
+```bash
+brew tap go-go-golems/go-go-go
+brew install codex-session
+```
+
+### Go install (from source)
+
+```bash
+go install github.com/go-go-golems/codex-session/cmd/codex-session@latest
+```
 
 ## Quick start
 
-Run commands from `scripts/`:
+```bash
+codex-session projects --output table
+codex-session list --limit 10 --output table
+codex-session index build --output table
+codex-session search --query "TODO" --output table
+```
+
+Trace report:
 
 ```bash
-python3 reflect_sessions.py --output -
+codex-session traces md --limit 2 --entries-per-file 10 --md-output trace_examples.md
 ```
 
-Human-readable output:
+Reflection (uses `codex exec resume ...` under the hood):
 
 ```bash
-python3 reflect_sessions.py --output-style human --output -
+codex-session reflect --limit 5 --output table
 ```
 
-Project filter example:
+## Development
 
 ```bash
-python3 reflect_sessions.py --project ExampleProject --output -
+make lint
+make test
+make build
 ```
 
-Preset prompt example:
+Pre-commit hooks are managed via `lefthook.yml`:
 
 ```bash
-python3 reflect_sessions.py --prompt-preset summary --output -
+lefthook install
 ```
 
-Inline prompt example:
+Snapshot release:
 
 ```bash
-python3 reflect_sessions.py --prompt-text "Summarize in 5 bullets." --output -
+make goreleaser
 ```
 
-## Prompt presets
+## Security notes
 
-Available presets:
-
-- `reflection` (default): full reflection on repetition, friction, and skill ideas
-- `summary`: concise summary of goals, actions, outputs, and decisions
-- `bloat`: bloat/dead ends/cleanup opportunities introduced during the session
-- `incomplete`: open loops and unfinished tasks
-- `decisions`: key decisions, alternatives, and rationale
-- `next_steps`: concrete follow-up actions, tests, and validations
-
-Use `--prompt-preset <name>`, `--prompt-text "<prompt>"`, or `--prompt-file /path/to/prompt.md`.
-
-## Cache behavior
-
-Reflections are cached per session *and* prompt. Cache files live here:
-
-```
-~/.codex/sessions/reflection_cache/<session_id>-<prompt_key>.json
-```
-
-`prompt_key` is a short hash derived from the prompt label (preset path or
-`inline:<hash>` for inline prompts). Legacy cache files without the prompt key
-are still read for the default `reflection` preset.
-
-## Notes on privacy
-
-The CLI reads local session histories from `~/.codex/sessions`. Reflections may contain
-sensitive content from those sessions. Review outputs before sharing them publicly.
-
-## Go port (WIP)
-
-This repo now includes an in-progress Go CLI (`codex-sessions`) that will eventually
-replace/extend the Python tooling with richer parsing/query capabilities.
-
-Run the CLI from the repo root:
-
-```bash
-go test ./... -count=1
-go run ./cmd/codex-sessions --help
-go run ./cmd/codex-sessions projects --output table
-```
+This tool reads local session histories (often containing sensitive data). Be careful when enabling indexing of tool outputs and when sharing exported data.
 
 ## License
 
 MIT. See `LICENSE`.
+

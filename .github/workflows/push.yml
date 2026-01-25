@@ -1,0 +1,73 @@
+name: golang-pipeline
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      -
+        name: Run unit tests
+        run: GOWORK=off go test ./... -count=1
+
+  smoke-fast:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Smoke tests (fast)
+        run: |
+          set -euo pipefail
+          GOWORK=off go run ./cmd/codex-session --help
+          GOWORK=off go run ./cmd/codex-session projects --help
+          GOWORK=off go run ./cmd/codex-session list --help
+          GOWORK=off go run ./cmd/codex-session search --help
+          GOWORK=off go run ./cmd/codex-session export --help
+          GOWORK=off go run ./cmd/codex-session reflect --help
+          GOWORK=off go run ./cmd/codex-session cleanup reflection-copies --help
+          GOWORK=off go run ./cmd/codex-session traces md --help
+
+  smoke-e2e:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Smoke test (e2e)
+        run: |
+          set -euo pipefail
+          ROOT="$(mktemp -d)"
+          mkdir -p "$ROOT/2026/01/25"
+          cat >"$ROOT/2026/01/25/rollout-2026-01-25T00-00-00-a.jsonl" <<'EOF'
+          {"type":"session_meta","timestamp":"2026-01-25T00:00:00Z","payload":{"id":"a","timestamp":"2026-01-25T00:00:00Z","cwd":"/tmp/proj"}}
+          {"type":"response_item","timestamp":"2026-01-25T00:00:01Z","payload":{"type":"tool_result","tool_name":"functions.shell_command","output":"line1\nline2"}}
+          EOF
+          # traces md (stdout)
+          OUT="$(GOWORK=off go run ./cmd/codex-session traces md --sessions-root "$ROOT" --include-most-recent --limit 1 --entries-per-file 5 --payload-types tool_result --include-raw-payload --md-output -)"
+          echo "$OUT" | grep -q "tool_name: functions.shell_command"
+          echo "$OUT" | grep -q "\\*\\*payload\\*\\*"
