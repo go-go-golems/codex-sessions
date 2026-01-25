@@ -65,3 +65,12 @@ Added codex-sessions search (non-indexed streaming scan) to find sessions/messag
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/search.go — Streaming scan search command
 
+
+## 2026-01-24
+
+Ran Go CLI smoke tests against real ~/.codex/sessions and added a test report doc to the ticket.
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Smoke test results
+

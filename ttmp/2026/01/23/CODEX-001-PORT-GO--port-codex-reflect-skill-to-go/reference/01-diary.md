@@ -634,3 +634,59 @@ alright go ahead, add tasks to build the go port, detailed. then start working, 
 - Start with `cmd/codex-sessions/search.go`.
 - Validate:
   - `go run ./cmd/codex-sessions search --query \"error\" --output table`
+
+## Step 11: Smoke Test on Real `~/.codex/sessions` + Write Test Report
+
+I ran the current Go CLI against the real local sessions archive (`~/.codex/sessions`) to validate it works on realistic data volume and payloads. I captured representative outputs (JSON and truncated tables) and wrote a dedicated test report document in the ticket so the results are easy to review and reference later.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable
+```
+
+**Assistant interpretation:** Execute a smoke test on real data, document results in the ticket, then upload the report to reMarkable.
+
+**Inferred user intent:** Verify the Go port is usable on the real session archive before investing in deeper features.
+
+**Commit (code):** N/A (test + docs only in this step)
+
+### What I did
+- Ran `go test ./... -count=1` to ensure unit tests pass.
+- Ran CLI commands against `/home/manuel/.codex/sessions` (401 rollout JSONL files):
+  - `projects` (project counts)
+  - `list --include-most-recent --limit 5`
+  - `show` on a real session file path
+  - `search --query error` as a representative substring scan
+- Captured outputs under `/tmp` and summarized results/risks in:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+
+### Why
+- Real archives include large logs and diverse payload shapes; smoke testing early catches parse/UX issues.
+
+### What worked
+- All commands ran successfully and produced valid JSON output.
+- Title/updated_at derivation produced plausible results on real sessions.
+
+### What didn't work
+- When timing commands, the initial `time` run hit a 10s command timeout in the harness (search timing needed a longer timeout). This did not reflect CLI failures, only tool execution limits.
+
+### What I learned
+- Search is usable as a non-indexed baseline but is slow on larger scans (~8s for 50 sessions); indexing will be needed for “interactive” feel.
+- Multiline cells (message text/snippets) make table output hard to read; we should add a “single-line” display option.
+
+### What was tricky to build
+- N/A (testing-focused step).
+
+### What warrants a second pair of eyes
+- Which fields we should normalize for display vs. preserve verbatim (especially multiline tool outputs that may contain sensitive data).
+
+### What should be done in the future
+- Implement optional SQLite+FTS indexing to speed up `search`.
+- Add a `--single-line` / newline-normalization option for `show`/`search` table output.
+
+### Code review instructions
+- Start with the report:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
