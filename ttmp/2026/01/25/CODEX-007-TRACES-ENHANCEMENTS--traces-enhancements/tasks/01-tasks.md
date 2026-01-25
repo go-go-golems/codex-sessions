@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T14:13:59-05:00
+LastUpdated: 2026-01-25T14:16:45-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -24,4 +24,4 @@ WhenToUse: ""
 - [x] Add payload type filtering
 - [x] Add optional raw payload rendering (truncated)
 - [x] Add/extend unit tests for new features
-- [ ] Add smoke test report + upload bundle to reMarkable
+- [x] Add smoke test report + upload bundle to reMarkable

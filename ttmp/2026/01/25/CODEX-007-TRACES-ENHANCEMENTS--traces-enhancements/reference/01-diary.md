@@ -21,7 +21,7 @@ RelatedFiles:
       Note: Task tracking
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T14:13:59-05:00
+LastUpdated: 2026-01-25T14:16:45-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -131,3 +131,49 @@ These features are implemented in `internal/tracesmd` and exposed through new CL
 
 ### Technical details
 - New flags: `--include-entry-metadata`, `--payload-types`, `--include-raw-payload`.
+
+## Step 3: Smoke test + upload to reMarkable
+
+Ran a smoke test to confirm metadata rendering, payload-type filtering, and raw payload sections behave as expected in real CLI output. Then bundled the spec, diary, and test report into a PDF and uploaded it to reMarkable under a ticket-specific folder.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload to remarkable"
+
+**Assistant interpretation:** After implementing and validating traces enhancements, export the ticket docs to reMarkable for offline review.
+
+**Inferred user intent:** Keep an offline, readable bundle of the ticket artifacts.
+
+### What I did
+- Ran `codex-sessions traces md` against a small synthetic sessions root to validate:
+  - metadata lines show correct `line_no` and `timestamp`
+  - `--payload-types tool_result` filters entries
+  - `--include-raw-payload` adds a `**payload**` section
+- Uploaded `CODEX-007 Traces Enhancements.pdf` to `/ai/2026/01/25/CODEX-007-TRACES-ENHANCEMENTS/`.
+
+### Why
+- The value of this feature is in the rendered Markdown; CLI smoke testing ensures usability.
+
+### What worked
+- Output matched expected behavior and upload succeeded.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-007-TRACES-ENHANCEMENTS--traces-enhancements/analysis/01-test-report.md`.
+
+### Technical details
+- Docs commit: `b461c8f` — "Test report(CODEX-007): traces enhancements"

@@ -6,4 +6,4 @@
 - [x] Add payload type filtering
 - [x] Add optional raw payload rendering (truncated)
 - [x] Add/extend unit tests for new features
-- [ ] Add smoke test report + upload bundle to reMarkable
+- [x] Add smoke test report + upload bundle to reMarkable
