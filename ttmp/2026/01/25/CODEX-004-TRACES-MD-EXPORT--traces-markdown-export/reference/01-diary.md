@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Multiline rendering + truncation tests
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:46:23-05:00
+LastUpdated: 2026-01-25T13:50:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -135,3 +135,47 @@ This keeps the CLI usable while still supporting `--md-output -` for stdout and 
 ### Technical details
 - Old: `codex-sessions traces md --output trace_examples.md` (invalid with Glazed)
 - New: `codex-sessions traces md --md-output trace_examples.md`
+
+## Step 3: Smoke test + test report
+
+Ran an end-to-end smoke test against a small synthetic sessions root to confirm that `traces md` emits valid Markdown to stdout and properly renders multiline strings (triple-quoted blocks inside fenced code). Then wrote the ticket’s test report so the exact command lines and observed output are preserved.
+
+### Prompt Context
+
+**User prompt (verbatim):** "run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable"
+
+**Assistant interpretation:** Validate the new traces export command end-to-end and document results in the ticket.
+
+**Inferred user intent:** Ensure the report is reliable for real debugging workflows and is suitable for reMarkable/PDF export.
+
+### What I did
+- Ran `codex-sessions traces md --md-output -` on a small test sessions root.
+- Verified multiline `output` values render as triple-quoted blocks inside fenced code.
+- Wrote `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-004-TRACES-MD-EXPORT--traces-markdown-export/analysis/01-test-report.md`.
+
+### Why
+- This command is primarily for human consumption; validating real rendered Markdown is essential.
+
+### What worked
+- The stdout report includes expected sections and fenced blocks; multiline rendering was readable.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Choosing a non-conflicting destination flag (`--md-output`) still allows the `--output json` Glazed format flag to work independently.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review the smoke-test excerpt and command lines in `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-004-TRACES-MD-EXPORT--traces-markdown-export/analysis/01-test-report.md`.
+
+### Technical details
+- Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"

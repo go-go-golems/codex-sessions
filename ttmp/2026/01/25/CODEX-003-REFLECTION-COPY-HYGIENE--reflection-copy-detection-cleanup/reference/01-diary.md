@@ -21,7 +21,7 @@ RelatedFiles:
       Note: Content-based detection of reflection copies
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:32:03-05:00
+LastUpdated: 2026-01-25T13:50:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -89,3 +89,50 @@ This brings the Go CLI closer to the Python behavior: reflection copies are iden
 ### Technical details
 - New flag: `--include-reflection-copies` on `projects`, `list`, `search` (streaming path), and `index build`.
 - New command: `codex-sessions cleanup reflection-copies [--dry-run=false] [--limit N]`.
+
+## Step 2: Smoke test + test report
+
+Ran an end-to-end smoke test on a small synthetic sessions root to validate discovery filtering, `--include-reflection-copies`, and the cleanup command’s dry-run vs delete behavior. Then wrote the ticket’s test report so the expected commands and observed outputs are reviewable/repeatable.
+
+This step also confirmed that content-based detection behaves correctly even when the filename does not include `-copy`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable"
+
+**Assistant interpretation:** Run the new CLI features to validate behavior and document the results in the ticket.
+
+**Inferred user intent:** Ensure the hygiene features work in practice and produce a durable artifact (test report) for later review and sharing.
+
+### What I did
+- Created a small sessions root with two normal sessions and one reflection copy (prefixed request title).
+- Verified default discovery excludes the copy, and `--include-reflection-copies` includes it.
+- Verified `cleanup reflection-copies` reports `would_delete` by default and `deleted` when `--dry-run=false`.
+- Wrote `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-003-REFLECTION-COPY-HYGIENE--reflection-copy-detection-cleanup/analysis/01-test-report.md`.
+
+### Why
+- Unit tests confirm logic, but CLI smoke tests ensure flag wiring and Glazed output behave correctly.
+
+### What worked
+- Smoke tests behaved as expected; reflection copy files were found and deleted only when explicitly requested.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Using a small synthetic sessions root is a fast way to validate selection/cleanup behavior without touching the real archive.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review the smoke-test commands and expected output in `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-003-REFLECTION-COPY-HYGIENE--reflection-copy-detection-cleanup/analysis/01-test-report.md`.
+
+### Technical details
+- Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"

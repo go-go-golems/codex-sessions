@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Wire parallel flags and run reflections via worker pool
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:37:10-05:00
+LastUpdated: 2026-01-25T13:50:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -84,3 +84,47 @@ The implementation uses a small helper (`runOrderedWorkerPool`) that runs work i
 ### Technical details
 - Flags: `--max-workers`, `--sequential`.
 - Ordered worker pool helper: `runOrderedWorkerPool[T,R](...)` emits results in input order.
+
+## Step 2: Smoke test parallel ordering + test report
+
+Ran a smoke test of `reflect --dry-run` on a small synthetic sessions root with multiple sessions to ensure output ordering is preserved with `--max-workers > 1`. Then wrote the ticket’s test report (including a qualitative performance note) so reviewers can replay the commands easily.
+
+### Prompt Context
+
+**User prompt (verbatim):** "run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable"
+
+**Assistant interpretation:** Validate the parallel reflect behavior end-to-end and document the observed behavior.
+
+**Inferred user intent:** Confirm parallelism doesn’t break determinism and provide a durable record of the validation.
+
+### What I did
+- Created a small sessions root with 6 sessions and increasing started-at timestamps.
+- Ran `reflect --dry-run --max-workers 4` and confirmed session ids are emitted in selection order.
+- Wrote `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-005-PARALLEL-REFLECT--parallel-execution-for-codex-sessions-reflect/analysis/01-test-report.md`.
+
+### Why
+- Concurrency changes can silently reorder output; a smoke test is the quickest regression check.
+
+### What worked
+- Output order remained stable (`s01..s06`) under parallel dry-run.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Ordered emission can be verified cheaply in dry-run mode without invoking Codex.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review the smoke-test command/output in `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-005-PARALLEL-REFLECT--parallel-execution-for-codex-sessions-reflect/analysis/01-test-report.md`.
+
+### Technical details
+- Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"
