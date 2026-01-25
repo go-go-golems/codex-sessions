@@ -756,7 +756,7 @@ ok cool, continue. CHeck off tasks and commit and keep a frequent detailed diary
 
 **Inferred user intent:** Make steady progress toward richer querying (facets/index/reflect) while keeping work reviewable.
 
-**Commit (code):** (pending) — will be recorded after commit
+**Commit (code):** 99a6340 — "go: add facet extraction and show views"
 
 ### What I did
 - Added facet extraction utilities:
@@ -779,6 +779,9 @@ ok cool, continue. CHeck off tasks and commit and keep a frequent detailed diary
 
 ### What didn't work
 - N/A.
+
+### Note
+- While updating the ticket changelog, I again accidentally used unquoted backticks in a shell-quoted `docmgr changelog update` entry, which triggered zsh command substitution and dropped part of the changelog line. I corrected the changelog entry afterward by editing `changelog.md` directly.
 
 ### What I learned
 - Glazed `types.Row` is itself a pointer alias type, so helper functions should accept `types.Row` (not `*types.Row`) to avoid double-pointer type errors.

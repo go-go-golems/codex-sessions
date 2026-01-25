@@ -83,3 +83,14 @@ Uploaded Go CLI smoke test report to reMarkable under /ai/2026/01/25/CODEX-001-P
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Report uploaded to reMarkable
 
+
+## 2026-01-24
+
+Implemented Phase 3 facet extraction (texts/tools/paths/errors) and wired it into codex-sessions show --view; improved search snippet display (commit 99a6340).
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/search.go — Single-line snippets
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/show.go — Facet views
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/facets.go — Facet extraction
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/patterns.go — Path/error heuristics

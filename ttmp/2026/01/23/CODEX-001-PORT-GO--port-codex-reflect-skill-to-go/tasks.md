@@ -37,17 +37,17 @@
 
 ### Phase 3: Extraction facets (query building blocks)
 
-- [ ] Extract `text` fields from nested payloads (optional)
-- [ ] Extract tool call metadata when present:
-  - [ ] tool name
-  - [ ] arguments (raw + parsed when JSON)
-  - [ ] outputs (with configurable truncation)
-- [ ] Extract file/path mentions from:
-  - [ ] tool args/outputs
-  - [ ] message text
-- [ ] Extract errors (best-effort):
-  - [ ] non-zero exit codes
-  - [ ] stack traces / common error lines
+- [x] Extract `text` fields from nested payloads (optional)
+- [x] Extract tool call metadata when present:
+- [x] tool name
+- [x] arguments (raw + parsed when JSON)
+- [x] outputs (with configurable truncation)
+- [x] Extract file/path mentions from:
+- [x] tool args/outputs
+- [x] message text
+- [x] Extract errors (best-effort):
+- [x] non-zero exit codes
+- [x] stack traces / common error lines
 
 ### Phase 4: Optional indexing (SQLite + FTS)
 
