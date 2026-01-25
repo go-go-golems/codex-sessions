@@ -6,4 +6,4 @@
 - [x] Add cleanup filters: --since/--until/--project
 - [x] Add output columns: size_bytes, dest_path
 - [x] Add unit tests for new cleanup modes
-- [ ] Add smoke test report + upload bundle to reMarkable
+- [x] Add smoke test report + upload bundle to reMarkable

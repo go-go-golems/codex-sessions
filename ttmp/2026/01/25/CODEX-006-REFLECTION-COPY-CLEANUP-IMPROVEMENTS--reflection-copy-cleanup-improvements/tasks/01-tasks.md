@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T14:06:20-05:00
+LastUpdated: 2026-01-25T14:09:09-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -24,4 +24,4 @@ WhenToUse: ""
 - [x] Add cleanup filters: `--since`/`--until`/`--project`
 - [x] Add output columns: `size_bytes`, `dest_path`
 - [x] Add unit tests for new cleanup modes
-- [ ] Add smoke test report + upload bundle to reMarkable
+- [x] Add smoke test report + upload bundle to reMarkable

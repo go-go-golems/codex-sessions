@@ -21,7 +21,7 @@ RelatedFiles:
       Note: Task tracking
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T14:06:20-05:00
+LastUpdated: 2026-01-25T14:09:09-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -134,3 +134,48 @@ The changes are implemented in the sessions package (so other tools can reuse th
 
 ### Technical details
 - New cleanup statuses: `would_delete`, `deleted`, `would_trash`, `trashed`, `error`.
+
+## Step 3: Smoke test + upload to reMarkable
+
+Ran an end-to-end smoke test of the new CLI flags (`--mode trash`, `--project` filtering) and confirmed that trash mode moves session files into a dated trash directory with the destination captured in `dest_path`. Then bundled the ticket’s spec/diary/test-report into a single PDF and uploaded it to reMarkable.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload to remarkable"
+
+**Assistant interpretation:** After implementing and validating the improvements, export ticket docs to reMarkable as a readable bundle.
+
+**Inferred user intent:** Keep an offline copy of the work + validation on the device for review.
+
+### What I did
+- Ran a synthetic-archive smoke test and wrote the results into the ticket test report.
+- Uploaded a bundled PDF via `remarquee upload bundle` to `/ai/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS/`.
+
+### Why
+- Smoke tests catch CLI wiring and UX issues that unit tests don’t.
+- reMarkable bundles are the preferred review medium for these tickets.
+
+### What worked
+- Trash mode produced `trashed` results with `dest_path`.
+- Upload succeeded.
+
+### What didn't work
+- N/A
+
+### What I learned
+- N/A
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- Review `/home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/analysis/01-test-report.md` for the exact smoke-test commands and outputs.
+
+### Technical details
+- Docs commit: `f824477` — "Test report(CODEX-006): cleanup improvements"

@@ -24,3 +24,17 @@ Step 2: Add trash mode, project/time filters, and richer output to cleanup refle
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/cleanup_reflection_copies.go — CLI wiring
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/cleanup_reflection_copies.go — Core cleanup improvements
 
+
+## 2026-01-25
+
+Step 3: Add test report for cleanup improvements (commit f824477)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/25/CODEX-006-REFLECTION-COPY-CLEANUP-IMPROVEMENTS--reflection-copy-cleanup-improvements/analysis/01-test-report.md — Smoke test commands and results
+
+
+## 2026-01-25
+
+Ticket closed
+
