@@ -80,7 +80,7 @@
 ### Phase 6: Glazed CLI suite
 
 - [x] Use Glazed patterns (`values.DecodeSectionInto` + `types.Row`)
-- [ ] Implement commands:
+- [x] Implement commands:
 - [x] `projects` (counts per project; mark current project)
 - [x] `list` (session listing)
 - [x] `show` (timeline/tools/raw views as rows)

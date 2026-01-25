@@ -161,3 +161,12 @@ Update smoke test report for reflect and upload PDF to reMarkable
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added reflect follow-up run section and uploaded PDF
 
+
+## 2026-01-25
+
+Check off remaining umbrella task for CLI command suite (task 59); all tasks complete
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/tasks.md — All tasks checked
+

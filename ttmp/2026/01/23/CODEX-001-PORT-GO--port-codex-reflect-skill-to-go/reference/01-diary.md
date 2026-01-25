@@ -1273,3 +1273,45 @@ continue.
 ### Technical details
 - Upload command used (via temp copy):
   - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-Reflect.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`
+
+## Step 21: Close Out Remaining Task Bookkeeping
+
+After implementing `reflect`, the only remaining item was the “umbrella” task for the CLI command suite. I checked it off so the ticket task list accurately reflects that all planned phases are complete.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+continue.
+```
+
+**Assistant interpretation:** Keep the ticket clean and up to date as we finish remaining loose ends.
+
+**Inferred user intent:** Make it obvious at a glance what work is left (ideally none).
+
+**Commit (code):** N/A
+
+### What I did
+- Checked off task 59 (“Implement commands:”) since all subcommands are now implemented.
+
+### Why
+- Task hygiene matters for handoff and future maintenance.
+
+### What worked
+- `docmgr task list` now reports all tasks complete.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- N/A.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Close the ticket when ready: `docmgr ticket close --ticket CODEX-001-PORT-GO`
