@@ -690,3 +690,50 @@ run it for testing and see how well it works, write a test report when done, sto
 ### Code review instructions
 - Start with the report:
   - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+
+## Step 12: Upload Test Report to reMarkable
+
+I uploaded the test report Markdown to reMarkable as a PDF using `remarquee` (rmapi-backed). I followed the safe workflow: first do a dry run, then upload without `--force`.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable
+```
+
+**Assistant interpretation:** Take the report doc we wrote and get it onto the device for reading.
+
+**Inferred user intent:** Review the test results on reMarkable, likely as part of planning the next implementation steps.
+
+**Commit (code):** N/A
+
+### What I did
+- Confirmed `remarquee` and auth:
+  - `remarquee status` → ok
+  - `remarquee cloud account --non-interactive` → user token present
+- Dry-run:
+  - `remarquee upload md --dry-run --non-interactive --remote-dir /ai/2026/01/25/CODEX-001-PORT-GO /tmp/CODEX-001-Go-CLI-Smoke-Test.md`
+- Upload:
+  - `remarquee upload md --non-interactive --remote-dir /ai/2026/01/25/CODEX-001-PORT-GO /tmp/CODEX-001-Go-CLI-Smoke-Test.md`
+- Verified:
+  - `remarquee cloud ls --non-interactive --long /ai/2026/01/25/CODEX-001-PORT-GO`
+
+### What worked
+- Upload succeeded: `CODEX-001-Go-CLI-Smoke-Test.pdf` is present under `/ai/2026/01/25/CODEX-001-PORT-GO`.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- `remarquee upload md` does not support `--name`; rename is best handled by copying the markdown to a suitably named temp file before upload.
+
+### What was tricky to build
+- N/A.
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- N/A.

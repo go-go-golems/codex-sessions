@@ -74,3 +74,12 @@ Ran Go CLI smoke tests against real ~/.codex/sessions and added a test report do
 
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Smoke test results
 
+
+## 2026-01-24
+
+Uploaded Go CLI smoke test report to reMarkable under /ai/2026/01/25/CODEX-001-PORT-GO as CODEX-001-Go-CLI-Smoke-Test.pdf.
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Report uploaded to reMarkable
+

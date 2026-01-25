@@ -121,6 +121,13 @@ To avoid `go run` compile overhead, I also built a binary to `/tmp/codex-session
 
 These timings are acceptable for a non-indexed baseline; an index/FTS path will be needed for interactive search across the full archive.
 
+### reMarkable upload
+
+Uploaded as a PDF via `remarquee`:
+
+- Remote dir: `/ai/2026/01/25/CODEX-001-PORT-GO`
+- Document name: `CODEX-001-Go-CLI-Smoke-Test` (PDF generated from a temp copy of this markdown)
+
 ### Issues / gaps observed
 
 1. **Multiline text in table output**: `search` snippets and `show` message text can contain newlines, which makes table output hard to read and can explode output size.
