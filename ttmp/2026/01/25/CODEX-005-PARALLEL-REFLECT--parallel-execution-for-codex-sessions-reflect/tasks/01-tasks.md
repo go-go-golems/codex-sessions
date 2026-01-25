@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:37:10-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -24,4 +24,4 @@ WhenToUse: ""
 - [x] Refactor reflect generation into per-session worker function
 - [x] Implement bounded worker pool + stable output ordering
 - [x] Add tests for ordering/caps (as feasible)
-- [ ] Add smoke test + performance section + upload to reMarkable
+- [x] Add smoke test + performance section + upload to reMarkable

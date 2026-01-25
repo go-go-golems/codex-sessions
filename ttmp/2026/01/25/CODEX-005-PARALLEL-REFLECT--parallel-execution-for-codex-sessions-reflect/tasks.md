@@ -6,4 +6,4 @@
 - [x] Refactor reflect generation into per-session worker function
 - [x] Implement bounded worker pool + stable output ordering
 - [x] Add tests for ordering/caps (as feasible)
-- [ ] Add smoke test + performance section + upload to reMarkable
+- [x] Add smoke test + performance section + upload to reMarkable

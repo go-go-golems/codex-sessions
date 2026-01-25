@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Wire parallel flags and run reflections via worker pool
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:50:39-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -128,3 +128,48 @@ Ran a smoke test of `reflect --dry-run` on a small synthetic sessions root with 
 
 ### Technical details
 - Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"
+
+## Step 3: Upload ticket bundle to reMarkable
+
+Uploaded the CODEX-005 spec, diary, and test report as a bundled PDF to reMarkable.
+
+### Prompt Context
+
+**User prompt (verbatim):** "update to remarkable"
+
+**Assistant interpretation:** Upload the completed ticket docs to reMarkable.
+
+**Inferred user intent:** Keep an offline copy of the final work and validation notes.
+
+### What I did
+- Ran `remarquee upload bundle` for the CODEX-005 docs.
+- Remote directory: `/ai/2026/01/25/CODEX-005-PARALLEL-REFLECT`
+- Bundle name: `CODEX-005 Parallel Reflect.pdf`
+
+### Why
+- Parallel reflect work is easier to review from a single PDF bundle (spec + diary + report).
+
+### What worked
+- Upload succeeded.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Bundled PDFs with a ToC are the best UX on reMarkable for multi-doc tickets.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A
+
+### Technical details
+- Command (example):
+  - `remarquee upload bundle <spec> <diary> <test-report> --name "CODEX-005 Parallel Reflect" --remote-dir "/ai/2026/01/25/CODEX-005-PARALLEL-REFLECT" --toc-depth 2`

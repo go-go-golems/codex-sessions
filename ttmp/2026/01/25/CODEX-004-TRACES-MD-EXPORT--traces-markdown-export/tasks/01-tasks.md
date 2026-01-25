@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:43:10-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -24,4 +24,4 @@ WhenToUse: ""
 - [x] Implement trace excerpt extraction + truncation
 - [x] Implement Markdown renderer (safe fenced blocks)
 - [x] Add unit tests (fixtures for multiline/output)
-- [ ] Add smoke test report + upload to reMarkable
+- [x] Add smoke test report + upload to reMarkable

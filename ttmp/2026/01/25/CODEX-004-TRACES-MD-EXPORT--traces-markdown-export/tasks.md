@@ -6,4 +6,4 @@
 - [x] Implement trace excerpt extraction + truncation
 - [x] Implement Markdown renderer (safe fenced blocks)
 - [x] Add unit tests (fixtures for multiline/output)
-- [ ] Add smoke test report + upload to reMarkable
+- [x] Add smoke test report + upload to reMarkable

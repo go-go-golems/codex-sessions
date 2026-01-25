@@ -13,7 +13,7 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:32:03-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -24,4 +24,4 @@ WhenToUse: ""
 - [x] Add `--include-reflection-copies` filtering to discovery + commands
 - [x] Add `codex-sessions cleanup reflection-copies` (`--dry-run`, rows)
 - [x] Add unit tests for detection + cleanup behavior
-- [ ] Update ticket test report + upload to reMarkable
+- [x] Update ticket test report + upload to reMarkable

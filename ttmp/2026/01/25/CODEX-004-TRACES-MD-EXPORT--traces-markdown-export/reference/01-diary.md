@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Multiline rendering + truncation tests
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:50:39-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -179,3 +179,48 @@ Ran an end-to-end smoke test against a small synthetic sessions root to confirm 
 
 ### Technical details
 - Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"
+
+## Step 4: Upload ticket bundle to reMarkable
+
+Uploaded the CODEX-004 spec, diary, and test report as a bundled PDF to a ticket-specific folder on reMarkable.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upate to remarkable"
+
+**Assistant interpretation:** Upload the current ticket docs to reMarkable for offline reading.
+
+**Inferred user intent:** Keep the latest ticket artifacts synchronized to the device.
+
+### What I did
+- Ran `remarquee upload bundle` for the CODEX-004 docs.
+- Remote directory: `/ai/2026/01/25/CODEX-004-TRACES-MD-EXPORT`
+- Bundle name: `CODEX-004 Traces Markdown Export.pdf`
+
+### Why
+- The traces docs are intended for human reading, and reMarkable is the target review medium.
+
+### What worked
+- Upload succeeded.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Using a stable ticket folder path prevents collisions and makes it easy to find later.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A
+
+### Technical details
+- Command (example):
+  - `remarquee upload bundle <spec> <diary> <test-report> --name "CODEX-004 Traces Markdown Export" --remote-dir "/ai/2026/01/25/CODEX-004-TRACES-MD-EXPORT" --toc-depth 2`

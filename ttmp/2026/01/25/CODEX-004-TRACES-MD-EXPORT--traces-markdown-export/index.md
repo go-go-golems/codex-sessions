@@ -1,7 +1,7 @@
 ---
 Title: Traces markdown export
 Ticket: CODEX-004-TRACES-MD-EXPORT
-Status: active
+Status: complete
 Topics:
     - backend
     - chat
@@ -13,10 +13,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T12:41:57.487491146-05:00
+LastUpdated: 2026-01-25T13:54:33.753013891-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # Traces markdown export
 

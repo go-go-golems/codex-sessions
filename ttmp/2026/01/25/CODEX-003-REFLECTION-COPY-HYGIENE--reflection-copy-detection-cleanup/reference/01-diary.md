@@ -21,7 +21,7 @@ RelatedFiles:
       Note: Content-based detection of reflection copies
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:50:39-05:00
+LastUpdated: 2026-01-25T13:53:39-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -136,3 +136,48 @@ This step also confirmed that content-based detection behaves correctly even whe
 
 ### Technical details
 - Docs commit: `49b1f30` — "Test reports: CODEX-003/004/005"
+
+## Step 3: Upload ticket bundle to reMarkable
+
+Uploaded the spec, diary, and test report as a single bundled PDF to a ticket-specific folder on reMarkable using `remarquee upload bundle`. This makes the ticket artifacts available for offline reading/review.
+
+### Prompt Context
+
+**User prompt (verbatim):** "upload to remarkable"
+
+**Assistant interpretation:** Export the ticket’s docs to reMarkable in a convenient format.
+
+**Inferred user intent:** Keep an offline, readable copy of the ticket artifacts on the device.
+
+### What I did
+- Ran `remarquee upload bundle` for the CODEX-003 docs.
+- Remote directory: `/ai/2026/01/25/CODEX-003-REFLECTION-COPY-HYGIENE`
+- Bundle name: `CODEX-003 Reflection Copy Hygiene.pdf`
+
+### Why
+- reMarkable is the preferred place to read and review these docs away from the terminal/editor.
+
+### What worked
+- Upload succeeded without Pandoc/LaTeX errors.
+
+### What didn't work
+- N/A
+
+### What I learned
+- Bundling (spec + diary + report) keeps reMarkable folders clean and easier to browse.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- N/A
+
+### What should be done in the future
+- N/A
+
+### Code review instructions
+- N/A
+
+### Technical details
+- Command (example):
+  - `remarquee upload bundle <spec> <diary> <test-report> --name "CODEX-003 Reflection Copy Hygiene" --remote-dir "/ai/2026/01/25/CODEX-003-REFLECTION-COPY-HYGIENE" --toc-depth 2`
