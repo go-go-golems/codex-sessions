@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"path/filepath"
+	"time"
 
 	"codex-reflect-skill/internal/sessions"
 
@@ -20,6 +21,11 @@ type CleanupReflectionCopiesSettings struct {
 	Prefix       string `glazed.parameter:"prefix"`
 	DryRun       bool   `glazed.parameter:"dry-run"`
 	Limit        int    `glazed.parameter:"limit"`
+	Mode         string `glazed.parameter:"mode"`
+
+	Project string `glazed.parameter:"project"`
+	Since   string `glazed.parameter:"since"`
+	Until   string `glazed.parameter:"until"`
 }
 
 type CleanupReflectionCopiesCommand struct {
@@ -55,10 +61,35 @@ By default this command is safe and will not delete anything unless --dry-run=fa
 				fields.WithHelp("Do not delete; only list files that would be deleted"),
 			),
 			fields.New(
+				"mode",
+				fields.TypeChoice,
+				fields.WithDefault("delete"),
+				fields.WithChoices("delete", "trash"),
+				fields.WithHelp("When --dry-run=false: delete files or move them to <sessions-root>/trash/reflection-copies/YYYY/MM/DD"),
+			),
+			fields.New(
 				"limit",
 				fields.TypeInteger,
 				fields.WithDefault(0),
 				fields.WithHelp("Safety limit: stop after matching this many files (0 = no limit)"),
+			),
+			fields.New(
+				"project",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Only act on reflection copies matching this derived project label"),
+			),
+			fields.New(
+				"since",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Only act on reflection copies on/after this ISO date or datetime"),
+			),
+			fields.New(
+				"until",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Only act on reflection copies on/before this ISO date or datetime"),
 			),
 		),
 	)
@@ -77,9 +108,30 @@ func (c *CleanupReflectionCopiesCommand) RunIntoGlazeProcessor(
 		return errors.Wrap(err, "failed to decode settings")
 	}
 
+	var since *time.Time
+	if settings.Since != "" {
+		parsed, err := sessions.ParseDateOrDateTime(settings.Since)
+		if err != nil {
+			return errors.Wrap(err, "invalid --since")
+		}
+		since = &parsed
+	}
+	var until *time.Time
+	if settings.Until != "" {
+		parsed, err := sessions.ParseDateOrDateTime(settings.Until)
+		if err != nil {
+			return errors.Wrap(err, "invalid --until")
+		}
+		until = &parsed
+	}
+
 	results, err := sessions.CleanupReflectionCopies(settings.SessionsRoot, settings.Prefix, sessions.CleanupReflectionCopiesOptions{
-		DryRun: settings.DryRun,
-		Limit:  settings.Limit,
+		DryRun:  settings.DryRun,
+		Limit:   settings.Limit,
+		Mode:    settings.Mode,
+		Project: settings.Project,
+		Since:   since,
+		Until:   until,
 	})
 	if err != nil {
 		return err
@@ -91,6 +143,8 @@ func (c *CleanupReflectionCopiesCommand) RunIntoGlazeProcessor(
 			types.MRP("session_id", r.SessionID),
 			types.MRP("project", r.Project),
 			types.MRP("path", filepath.Clean(r.Path)),
+			types.MRP("dest_path", r.DestPath),
+			types.MRP("size_bytes", r.SizeBytes),
 			types.MRP("error", r.Error),
 		)
 		if err := gp.AddRow(ctx, row); err != nil {
