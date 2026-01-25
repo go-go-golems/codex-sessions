@@ -19,7 +19,7 @@ RelatedFiles:
       Note: Multiline rendering + truncation tests
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T13:43:10-05:00
+LastUpdated: 2026-01-25T13:46:23-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
@@ -86,3 +86,52 @@ The renderer is deterministic (sorted map keys) and includes truncation knobs fo
 ### Technical details
 - Command: `codex-sessions traces md`
 - Output: Markdown report with `response_item`-only excerpts (`text`, `arguments`, `output`)
+
+## Step 2: Fix Glazed `--output` flag collision (`--md-output`)
+
+While running a smoke test, `codex-sessions` failed to start because the `traces md` subcommand defined a flag named `--output`, which collides with Glazed’s built-in `--output` flag used for selecting output formats (json/table/etc). Renamed the markdown destination flag to `--md-output` to avoid protocol/flag contamination and allow the command to run normally.
+
+This keeps the CLI usable while still supporting `--md-output -` for stdout and `--md-output trace_examples.md` for file output.
+
+### Prompt Context
+
+**User prompt (verbatim):** "run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable"
+
+**Assistant interpretation:** Run the new commands to validate behavior end-to-end and address any runtime failures found during smoke testing.
+
+**Inferred user intent:** Ensure the CLI works in practice, not just via unit tests, and produce reliable ticket artifacts (test reports + reMarkable uploads).
+
+**Commit (code):** 85ea73c — "Traces: avoid --output flag conflict"
+
+### What I did
+- Renamed the markdown output flag from `--output` to `--md-output` in `traces md`.
+- Re-ran `go test ./... -count=1` to ensure the refactor didn’t break build/tests.
+
+### Why
+- Glazed reserves `--output` for output format selection; custom commands must not reuse that flag name.
+
+### What worked
+- The command now builds and runs without cobra/glazed flag registration errors.
+
+### What didn't work
+- Prior to the fix, running `go run ./cmd/codex-sessions traces md ...` failed with: `Flag 'output' ... already exists`.
+
+### What I learned
+- For Glazed-built commands, avoid using `output`/`format`-like flag names that may be reserved by the framework.
+
+### What was tricky to build
+- N/A
+
+### What warrants a second pair of eyes
+- Confirm that `--md-output` naming is acceptable UX and won’t collide with any other global flags.
+
+### What should be done in the future
+- Consider adding an alias flag (if Glazed supports it) to accept `--md-output` and a positional output path (optional).
+
+### Code review instructions
+- Review `/home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/traces_md.go` for the flag rename.
+- Validate by running `codex-sessions traces md --md-output -` and confirming it prints markdown.
+
+### Technical details
+- Old: `codex-sessions traces md --output trace_examples.md` (invalid with Glazed)
+- New: `codex-sessions traces md --md-output trace_examples.md`

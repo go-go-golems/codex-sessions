@@ -24,3 +24,12 @@ Step 1: Add traces markdown export command and renderer (commit 7c6ede1)
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/traces_md.go — New command traces md
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/tracesmd/tracesmd.go — Markdown rendering and truncation
 
+
+## 2026-01-25
+
+Step 2: Rename traces markdown destination flag to --md-output to avoid Glazed --output collision (commit 85ea73c)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/traces_md.go — Flag rename output->md-output
+
