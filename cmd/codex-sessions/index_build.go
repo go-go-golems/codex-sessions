@@ -26,6 +26,7 @@ type IndexBuildSettings struct {
 	Until              string `glazed.parameter:"until"`
 	Limit              int    `glazed.parameter:"limit"`
 	IncludeMostRecent  bool   `glazed.parameter:"include-most-recent"`
+	IncludeCopies      bool   `glazed.parameter:"include-reflection-copies"`
 	Force              bool   `glazed.parameter:"force"`
 	MaxChars           int    `glazed.parameter:"max-chars"`
 	IncludeToolCalls   bool   `glazed.parameter:"include-tool-calls"`
@@ -87,6 +88,12 @@ Use --force to rebuild everything selected.
 				fields.TypeBool,
 				fields.WithDefault(false),
 				fields.WithHelp("Include the most recent session (skipped by default)"),
+			),
+			fields.New(
+				"include-reflection-copies",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include reflection copies (sessions prefixed for self-reflection)"),
 			),
 			fields.New(
 				"force",
@@ -161,7 +168,11 @@ func (c *IndexBuildCommand) RunIntoGlazeProcessor(
 		return err
 	}
 
-	paths, err := sessions.DiscoverRolloutFiles(settings.SessionsRoot)
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
 	if err != nil {
 		return err
 	}

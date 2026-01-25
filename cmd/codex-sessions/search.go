@@ -32,6 +32,7 @@ type SearchSettings struct {
 	Limit             int    `glazed.parameter:"limit"`
 	MaxResults        int    `glazed.parameter:"max-results"`
 	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
+	IncludeCopies     bool   `glazed.parameter:"include-reflection-copies"`
 	CaseSensitive     bool   `glazed.parameter:"case-sensitive"`
 	PerMessage        bool   `glazed.parameter:"per-message"`
 	MaxSnippetChars   int    `glazed.parameter:"max-snippet-chars"`
@@ -119,6 +120,12 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeBool,
 				fields.WithDefault(false),
 				fields.WithHelp("Include the most recent session (skipped by default)"),
+			),
+			fields.New(
+				"include-reflection-copies",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include reflection copies (sessions prefixed for self-reflection)"),
 			),
 			fields.New(
 				"case-sensitive",
@@ -302,7 +309,11 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 		}
 	}
 
-	paths, err := sessions.DiscoverRolloutFiles(settings.SessionsRoot)
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
 	if err != nil {
 		return err
 	}
@@ -384,7 +395,7 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 
 		if !settings.PerMessage && matchCount > 0 {
 			updatedAt, _ := sessions.ConversationUpdatedAt(meta.Path)
-			title, _ := sessions.ConversationTitle(meta.Path, "[SELF-REFLECTION] ", 80)
+			title, _ := sessions.ConversationTitle(meta.Path, sessions.DefaultSelfReflectionPrefix, 80)
 			row := types.NewRow(
 				types.MRP("session_id", meta.ID),
 				types.MRP("project", meta.ProjectName()),

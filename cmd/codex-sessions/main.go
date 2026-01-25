@@ -157,6 +157,29 @@ func main() {
 	}
 	indexCmd.AddCommand(cobraIndexStatsCmd)
 
+	cleanupCmd := &cobra.Command{
+		Use:   "cleanup",
+		Short: "Clean up session artifacts (e.g., reflection copies)",
+	}
+	rootCmd.AddCommand(cleanupCmd)
+
+	cleanupReflectionCopiesCmd, err := NewCleanupReflectionCopiesCommand()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating cleanup reflection-copies command: %v\n", err)
+		os.Exit(1)
+	}
+	cobraCleanupReflectionCopiesCmd, err := cli.BuildCobraCommand(cleanupReflectionCopiesCmd,
+		cli.WithParserConfig(cli.CobraParserConfig{
+			ShortHelpLayers: []string{schema.DefaultSlug},
+			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
+		}),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building cobra cleanup reflection-copies command: %v\n", err)
+		os.Exit(1)
+	}
+	cleanupCmd.AddCommand(cobraCleanupReflectionCopiesCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

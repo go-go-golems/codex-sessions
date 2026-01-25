@@ -24,6 +24,7 @@ type ListSettings struct {
 	Until             string `glazed.parameter:"until"`
 	Limit             int    `glazed.parameter:"limit"`
 	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
+	IncludeCopies     bool   `glazed.parameter:"include-reflection-copies"`
 }
 
 type ListCommand struct {
@@ -75,6 +76,12 @@ This is the Go analogue of the Python tool's selection behavior (project/time fi
 				fields.WithDefault(false),
 				fields.WithHelp("Include the most recent session (skipped by default)"),
 			),
+			fields.New(
+				"include-reflection-copies",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include reflection copies (sessions prefixed for self-reflection)"),
+			),
 		),
 	)
 	return &ListCommand{CommandDescription: desc}, nil
@@ -109,7 +116,11 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 		until = &parsed
 	}
 
-	paths, err := sessions.DiscoverRolloutFiles(settings.SessionsRoot)
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
 	if err != nil {
 		return err
 	}
@@ -157,7 +168,7 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 		if err != nil {
 			continue
 		}
-		title, err := sessions.ConversationTitle(m.Path, "[SELF-REFLECTION] ", 80)
+		title, err := sessions.ConversationTitle(m.Path, sessions.DefaultSelfReflectionPrefix, 80)
 		if err != nil {
 			title = "Untitled conversation"
 		}

@@ -20,7 +20,8 @@ import (
 )
 
 type ProjectsSettings struct {
-	SessionsRoot string `glazed.parameter:"sessions-root"`
+	SessionsRoot  string `glazed.parameter:"sessions-root"`
+	IncludeCopies bool   `glazed.parameter:"include-reflection-copies"`
 }
 
 type ProjectsCommand struct {
@@ -50,6 +51,12 @@ Project is derived from the session meta cwd basename (matching the Python tool)
 				fields.WithDefault(defaultSessionsRoot()),
 				fields.WithHelp("Root directory containing Codex session JSONL files"),
 			),
+			fields.New(
+				"include-reflection-copies",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Include reflection copies (sessions prefixed for self-reflection)"),
+			),
 		),
 	)
 
@@ -69,7 +76,11 @@ func (c *ProjectsCommand) RunIntoGlazeProcessor(
 	}
 
 	root := settings.SessionsRoot
-	paths, err := sessions.DiscoverRolloutFiles(root)
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(root, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
 	if err != nil {
 		return err
 	}

@@ -73,7 +73,7 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		return res
 	}
 	res.UpdatedAt = updatedAt.UTC().Format(time.RFC3339)
-	title, err := sessions.ConversationTitle(meta.Path, "[SELF-REFLECTION] ", 80)
+	title, err := sessions.ConversationTitle(meta.Path, sessions.DefaultSelfReflectionPrefix, 80)
 	if err != nil {
 		title = "Untitled conversation"
 	}

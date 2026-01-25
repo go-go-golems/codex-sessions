@@ -31,8 +31,9 @@ func (m SessionMeta) ProjectName() string {
 
 var ErrNoSessionMeta = errors.New("session_meta not found")
 
+const DefaultSelfReflectionPrefix = "[SELF-REFLECTION] "
+
 // StripSelfReflectionPrefix removes the reflection prefix when present.
 func StripSelfReflectionPrefix(text string) string {
-	const prefix = "[SELF-REFLECTION] "
-	return strings.TrimPrefix(text, prefix)
+	return strings.TrimPrefix(text, DefaultSelfReflectionPrefix)
 }

@@ -142,7 +142,7 @@ func (c *ExportCommand) RunIntoGlazeProcessor(
 	if err != nil {
 		return err
 	}
-	title, err := sessions.ConversationTitle(meta.Path, "[SELF-REFLECTION] ", 80)
+	title, err := sessions.ConversationTitle(meta.Path, sessions.DefaultSelfReflectionPrefix, 80)
 	if err != nil {
 		title = "Untitled conversation"
 	}

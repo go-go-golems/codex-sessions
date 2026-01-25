@@ -37,7 +37,7 @@ func TestConversationTitle_EventMsgPreferred(t *testing.T) {
 		t.Fatalf("write: %v", err)
 	}
 
-	title, err := ConversationTitle(path, "[SELF-REFLECTION] ", 80)
+	title, err := ConversationTitle(path, DefaultSelfReflectionPrefix, 80)
 	if err != nil {
 		t.Fatalf("ConversationTitle: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestConversationTitle_RequestMarker(t *testing.T) {
 		t.Fatalf("write: %v", err)
 	}
 
-	title, err := ConversationTitle(path, "[SELF-REFLECTION] ", 80)
+	title, err := ConversationTitle(path, DefaultSelfReflectionPrefix, 80)
 	if err != nil {
 		t.Fatalf("ConversationTitle: %v", err)
 	}
