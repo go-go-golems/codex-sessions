@@ -30,6 +30,8 @@ type ReflectSettings struct {
 	SessionIDs        string `glazed.parameter:"session-ids"`
 	Limit             int    `glazed.parameter:"limit"`
 	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
+	MaxWorkers        int    `glazed.parameter:"max-workers"`
+	Sequential        bool   `glazed.parameter:"sequential"`
 
 	Prefix       string `glazed.parameter:"prefix"`
 	PromptPreset string `glazed.parameter:"prompt-preset"`
@@ -121,6 +123,18 @@ Use --dry-run to compute cache status and selection without invoking Codex.
 				fields.TypeBool,
 				fields.WithDefault(false),
 				fields.WithHelp("Include the most recent session (skipped by default)"),
+			),
+			fields.New(
+				"max-workers",
+				fields.TypeInteger,
+				fields.WithDefault(4),
+				fields.WithHelp("Maximum number of concurrent reflections to run"),
+			),
+			fields.New(
+				"sequential",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Run reflections sequentially (alias for --max-workers 1)"),
 			),
 			fields.New(
 				"prefix",
@@ -329,7 +343,15 @@ func (c *ReflectCommand) RunIntoGlazeProcessor(
 		}
 	}
 
-	for _, meta := range metas {
+	maxWorkers := settings.MaxWorkers
+	if settings.Sequential {
+		maxWorkers = 1
+	}
+	if maxWorkers < 1 {
+		maxWorkers = 1
+	}
+
+	buildRow := func(ctx context.Context, meta sessions.SessionMeta) types.Row {
 		conv, convErr := reflectcli.BuildConversationInfo(meta)
 
 		cachePath := reflectcli.CachePath(cacheDir, meta.ID, promptCacheKey)
@@ -452,10 +474,22 @@ func (c *ReflectCommand) RunIntoGlazeProcessor(
 			row.Set("prompt_updated_at", promptState.UpdatedAt)
 		}
 
-		if err := gp.AddRow(ctx, row); err != nil {
-			return err
-		}
+		return row
 	}
 
-	return nil
+	emit := func(row types.Row) error { return gp.AddRow(ctx, row) }
+	work := func(ctx context.Context, meta sessions.SessionMeta) (types.Row, error) {
+		return buildRow(ctx, meta), nil
+	}
+
+	if maxWorkers == 1 || len(metas) <= 1 {
+		for _, meta := range metas {
+			if err := emit(buildRow(ctx, meta)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	return runOrderedWorkerPool(ctx, metas, maxWorkers, work, emit)
 }
