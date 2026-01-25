@@ -1,5 +1,7 @@
 # codex-session
 
+This is a go port of <https://github.com/olliepro/Codex-Reflect-Skill/>
+
 Query, index, export, and reflect on Codex session histories stored in `~/.codex/sessions`.
 
 ## What it does
@@ -74,8 +76,3 @@ make goreleaser
 ## Security notes
 
 This tool reads local session histories (often containing sensitive data). Be careful when enabling indexing of tool outputs and when sharing exported data.
-
-## License
-
-MIT. See `LICENSE`.
-
