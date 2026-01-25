@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"codex-reflect-skill/internal/sessions"
+	"github.com/go-go-golems/codex-session/internal/sessions"
 )
 
 func TestBuildSessionIndexAndSearch(t *testing.T) {

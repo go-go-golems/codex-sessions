@@ -4,7 +4,7 @@ import (
 	"context"
 	"path/filepath"
 
-	"codex-reflect-skill/internal/indexdb"
+	"github.com/go-go-golems/codex-session/internal/indexdb"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"

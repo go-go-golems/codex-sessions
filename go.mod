@@ -1,4 +1,4 @@
-module codex-reflect-skill
+module github.com/go-go-golems/codex-session
 
 go 1.25.5
 

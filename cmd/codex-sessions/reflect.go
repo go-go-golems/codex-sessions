@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	reflectcli "codex-reflect-skill/internal/reflect"
-	"codex-reflect-skill/internal/sessions"
+	reflectcli "github.com/go-go-golems/codex-session/internal/reflect"
+	"github.com/go-go-golems/codex-session/internal/sessions"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	presetfs "codex-reflect-skill/scripts/prompts"
+	presetfs "github.com/go-go-golems/codex-session/scripts/prompts"
 )
 
 type PromptPreset struct {

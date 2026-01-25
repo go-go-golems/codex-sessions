@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"codex-reflect-skill/internal/sessions"
+	"github.com/go-go-golems/codex-session/internal/sessions"
 )
 
 type BuildOptions struct {

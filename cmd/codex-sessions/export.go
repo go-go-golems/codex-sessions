@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"codex-reflect-skill/internal/sessions"
+	"github.com/go-go-golems/codex-session/internal/sessions"
 
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
