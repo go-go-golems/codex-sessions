@@ -9,6 +9,8 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: cmd/codex-sessions/export.go
+      Note: Export command validated in follow-up run (commit 39e2894)
     - Path: cmd/codex-sessions/list.go
       Note: List command
     - Path: cmd/codex-sessions/main.go
@@ -21,12 +23,15 @@ RelatedFiles:
       Note: Show command
     - Path: internal/sessions
       Note: Parsing and normalization
+    - Path: internal/sessions/facets.go
+      Note: Tool facet extraction fixed for custom_tool_call shapes (commit 39e2894)
 ExternalSources: []
-Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search).
+Summary: Smoke test results for the Go Glazed CLI against the real ~/.codex/sessions archive (projects/list/show/search/export).
 LastUpdated: 2026-01-24T19:20:47.940213553-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Test Report: Go CLI Smoke Test (codex-sessions)
@@ -131,12 +136,43 @@ Uploaded as a PDF via `remarquee`:
 ### Issues / gaps observed
 
 1. **Multiline text in table output**: `search` snippets and `show` message text can contain newlines, which makes table output hard to read and can explode output size.
-   - Suggested fix: add an option like `--single-line` that replaces newlines with literal `\\n` or collapses whitespace for display columns.
+   - Status: FIXED in a later commit (see follow-up run section below).
 
 2. **Reflection-copy filtering gap**: discovery currently excludes filenames containing `-copy`, but does not detect “[SELF-REFLECTION]” copies by content (the Python tool does).
    - Suggested fix: implement a fast prefix check against early user messages, and optionally skip those files during discovery/list/search unless explicitly requested.
 
 3. **Search semantics**: `--limit` currently limits the number of sessions scanned (matching Python semantics), not “number of matches returned”. This is fine but should be documented in `--help` strings.
+
+## Follow-up Run: Export + Tool Facets (Real Session Shapes)
+
+**Date run:** 2026-01-25 (UTC)
+
+**Git HEAD tested:** `39e2894`
+
+### Commands executed
+
+```bash
+go test ./... -count=1
+
+go run ./cmd/codex-sessions show --path /home/manuel/.codex/sessions/2026/01/24/rollout-2026-01-24T13-39-26-019bf14d-cd4e-7c22-ac48-a9fb1e3d4d89.jsonl --view tools --limit 8 --single-line --output table
+
+go run ./cmd/codex-sessions export --path /home/manuel/.codex/sessions/2026/01/24/rollout-2026-01-24T13-39-26-019bf14d-cd4e-7c22-ac48-a9fb1e3d4d89.jsonl --shape document --extract facets --output json > /tmp/codex-export-facets.json
+jq '.[0].document.facets.tool_calls|length' /tmp/codex-export-facets.json
+jq '.[0].document.facets.tool_outputs|length' /tmp/codex-export-facets.json
+```
+
+### Results summary
+
+- `go test`: PASS
+- `show --view tools`: OK (renders tool call/output rows; readable with `--single-line`)
+- `export --shape document --extract facets`: OK
+  - tool_calls length: 76
+  - tool_outputs length: 76
+
+### Notes
+
+- Real Codex sessions in this archive represent tool calls as `response_item.payload.type=custom_tool_call` and tool outputs as `custom_tool_call_output`, with linkage via `call_id`.
+- Tool output payloads do not necessarily include the tool name, so correct extraction requires correlating output rows to earlier calls using `call_id`.
 
 ## Usage Examples
 

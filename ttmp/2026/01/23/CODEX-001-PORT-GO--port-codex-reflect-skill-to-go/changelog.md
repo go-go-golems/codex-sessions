@@ -94,3 +94,22 @@ Implemented Phase 3 facet extraction (texts/tools/paths/errors) and wired it int
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/show.go — Facet views
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/facets.go — Facet extraction
 - /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/patterns.go — Path/error heuristics
+
+## 2026-01-24
+
+Add export command and robust tool facet extraction (commit 39e2894)
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/cmd/codex-sessions/export.go — New export command for normalized document/rows output
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/internal/sessions/facets.go — Extract tool calls/outputs from custom_tool_call payloads and correlate outputs by call_id
+
+
+## 2026-01-24
+
+Update smoke test report for export/tool facets and upload follow-up PDF to reMarkable
+
+### Related Files
+
+- /home/manuel/code/others/llms/Codex-Reflect-Skill/ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md — Added follow-up run results for commit 39e2894 and exported artifacts
+

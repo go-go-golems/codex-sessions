@@ -9,6 +9,12 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: cmd/codex-sessions/export.go
+      Note: Implemented export command (commit 39e2894)
+    - Path: internal/sessions/facets.go
+      Note: Schema-aware tool call extraction + call_id correlation (commit 39e2894)
+    - Path: internal/sessions/facets_test.go
+      Note: Tests for custom_tool_call correlation (commit 39e2894)
     - Path: ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/design-doc/01-analysis-current-python-session-reflection-cli.md
       Note: Analysis produced during this diary
     - Path: ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/design-doc/02-design-go-conversation-parsing-indexing-and-glazed-cli.md
@@ -21,6 +27,7 @@ LastUpdated: 2026-01-23T23:49:13.628148877-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 # Diary
@@ -802,3 +809,138 @@ ok cool, continue. CHeck off tasks and commit and keep a frequent detailed diary
   - `internal/sessions/patterns.go`
   - `cmd/codex-sessions/show.go`
   - `cmd/codex-sessions/search.go`
+
+## Step 14: Add `export` + Fix Tool Facets for Real Codex Session Shapes
+
+I implemented the `codex-sessions export` command so sessions can be emitted in a stable, normalized shape for downstream processing (JSON/YAML document mode or row mode). This makes it practical to build ad-hoc queries and pipelines without having to re-parse raw JSONL every time.
+
+While validating against a real `~/.codex/sessions` archive, I found the current Codex session format represents tool calls as `custom_tool_call` / `custom_tool_call_output` payloads (with `call_id` linkage), which the earlier heuristic-based tool facet extraction didn’t handle correctly. I updated facet extraction to recognize these payload types and to correlate outputs back to their originating tool call using `call_id`.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable
+```
+
+**Assistant interpretation:** Run the Go CLI against real session archives, verify output quality, document results in the ticket, and keep moving the implementation forward with frequent commits and diary updates.
+
+**Inferred user intent:** Ensure the Go port is reliable on real Codex data (not just unit fixtures) and keep progress traceable and reviewable.
+
+**Commit (code):** 39e2894 — "go: add export command and robust tool facets"
+
+### What I did
+- Added a new Glazed command `codex-sessions export` supporting:
+  - `--shape document|rows`
+  - `--extract minimal|timeline|facets|all`
+  - truncation (`--max-chars`) and optional single-line rendering (`--single-line`)
+- Updated facet extraction to handle real Codex session tool payload shapes:
+  - `custom_tool_call` (reads `name` + `input`, maps `call_id` → `name`)
+  - `custom_tool_call_output` (reads `output`, resolves tool name via `call_id`)
+- Added unit tests covering:
+  - `custom_tool_call` + `custom_tool_call_output` correlation by `call_id`
+  - guarding against treating arbitrary `{"name": ...}` objects as tool invocations
+- Ran validation commands:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions export --path <rollout.jsonl> --shape document --extract facets --output json | jq ...`
+
+### Why
+- `export` is the most useful integration point for “query past conversations” workflows (pipe to jq, store as JSON, feed into external indexers, etc.).
+- Tool call extraction must be schema-aware for the current Codex session format; heuristic scanning alone produced misleading counts.
+
+### What worked
+- Export emits well-formed JSON for both shapes and selections.
+- On a real session sample, the fixed extraction yields reasonable tool call/output counts (instead of 0 or runaway counts).
+
+### What didn't work
+- The initial “tightened” heuristic accidentally dropped tool calls entirely on real data because the real payload type is `custom_tool_call` (not `tool_call`).
+
+### What I learned
+- The safest approach is a layered extractor:
+  - schema-aware fast paths for known top-level shapes (`response_item.payload.type`)
+  - a fallback recursive scanner for unknown nested shapes
+
+### What was tricky to build
+- Correlating `custom_tool_call_output` back to the tool name requires state across JSONL lines (`call_id` → `name`), which doesn’t fit a purely-recursive “scan the whole JSON object” approach.
+
+### What warrants a second pair of eyes
+- Whether `"unknown"` is the best fallback tool name for outputs without a matching call (it keeps rows visible, but may confuse downstream aggregation).
+
+### What should be done in the future
+- Update the smoke-test report doc to include export-focused checks and the corrected tool call extraction semantics.
+
+### Code review instructions
+- Start with:
+  - `cmd/codex-sessions/export.go`
+  - `internal/sessions/facets.go`
+- Validate locally:
+  - `go test ./... -count=1`
+  - `go run ./cmd/codex-sessions export --path ~/.codex/sessions/.../rollout-....jsonl --shape document --extract facets --output json | jq '.[0].document.facets.tool_calls|length'`
+
+### Technical details
+- Real session evidence (from grep):
+  - payload type: `custom_tool_call`
+  - payload type: `custom_tool_call_output`
+  - linkage: `call_id`
+
+## Step 15: Update Test Report, Check Off Tasks, and Upload Follow-up PDF
+
+After the `export` and tool facet extraction changes were in place, I refreshed the ticket’s smoke-test report to reflect the new capabilities (export output shape + real tool payload support). This keeps the ticket’s validation evidence aligned with the current implementation.
+
+I also uploaded the updated report to reMarkable as a new PDF (to avoid overwriting prior annotations), and checked off the corresponding ticket tasks for `export` and “validate on real archive”.
+
+### Prompt Context
+
+**User prompt (verbatim):**
+
+```text
+run it for testing and see how well it works, write a test report when done, store in ticket. upload to remarkable
+```
+
+**Assistant interpretation:** Make sure the CLI works on real sessions, document the results, and publish the report to reMarkable.
+
+**Inferred user intent:** Confirm real-world usefulness and keep the project artifacts accessible (ticket + e-ink reading).
+
+**Commit (code):** N/A
+
+### What I did
+- Checked off tasks in the ticket:
+  - `export` (task 63)
+  - validate on real archive (task 68)
+- Updated the smoke test report doc to include a follow-up run for:
+  - `codex-sessions export`
+  - corrected tool call extraction for `custom_tool_call` shapes
+- Uploaded the updated report to reMarkable:
+  - `/ai/2026/01/25/CODEX-001-PORT-GO/CODEX-001-Go-CLI-Smoke-Test-FollowUp.pdf`
+
+### Why
+- The ticket should remain the “single source of truth” for what has been validated and what remains.
+- Export + tool facets are high-leverage features; they warranted explicit validation evidence.
+
+### What worked
+- `remarquee upload md` succeeded and created a new PDF alongside the prior upload.
+
+### What didn't work
+- N/A.
+
+### What I learned
+- ReMarkable uploads are easiest to manage by giving the markdown file a stable basename before upload (since the PDF name follows the input filename).
+
+### What was tricky to build
+- N/A (bookkeeping + upload).
+
+### What warrants a second pair of eyes
+- N/A.
+
+### What should be done in the future
+- Add a follow-up validation section once `index build` exists (search quality + performance comparison).
+
+### Code review instructions
+- Review updates in:
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/reference/03-test-report-go-cli-smoke-test-codex-sessions.md`
+  - `ttmp/2026/01/23/CODEX-001-PORT-GO--port-codex-reflect-skill-to-go/tasks.md`
+
+### Technical details
+- Upload command used (via a temp copy):
+  - `remarquee upload md /tmp/CODEX-001-Go-CLI-Smoke-Test-FollowUp.md --remote-dir "/ai/2026/01/25/CODEX-001-PORT-GO"`

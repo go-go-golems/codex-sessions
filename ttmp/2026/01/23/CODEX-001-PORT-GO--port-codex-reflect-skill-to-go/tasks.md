@@ -84,7 +84,7 @@
 - [x] `projects` (counts per project; mark current project)
 - [x] `list` (session listing)
 - [x] `show` (timeline/tools/raw views as rows)
-  - [ ] `export` (normalized JSON or rows)
+- [x] `export` (normalized JSON or rows)
 - [x] `search` (index-backed or streaming)
   - [ ] `index build` / `index stats`
   - [ ] `reflect` (parity with Python reflect behavior)
@@ -92,5 +92,5 @@
 ### Phase 7: Validation + tests
 
 - [x] Add parser unit tests with small fixtures (redacted)
-- [ ] Validate against a real `~/.codex/sessions` archive (local)
+- [x] Validate against a real `~/.codex/sessions` archive (local)
 - [ ] Document known edge cases + limitations in the ticket
