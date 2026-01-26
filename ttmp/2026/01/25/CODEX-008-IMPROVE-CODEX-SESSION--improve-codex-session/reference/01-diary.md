@@ -475,3 +475,64 @@ I removed backward-compatible migrations and replaced them with a destructive sc
   - `python3 /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/ttmp/2026/01/25/CODEX-008-IMPROVE-CODEX-SESSION--improve-codex-session/scripts/01-check-tool-call-columns.py`
   - `go run ./cmd/codex-session index stats --sessions-root /home/manuel/.codex/sessions`
   - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`
+
+## Step 8: Add tool/arg filters to indexed search
+
+I added `--tool` and `--arg` filters (using Glazed `ParameterTypeKeyValue`) so users can query tool calls by structured argument values. The indexer now flattens arguments into searchable tokens (e.g., `argkey__argval`), and the indexed search composes an FTS query that ANDs those tokens with the base query. This enables commands like `--scope tools --tool docmgr --arg foo:bar` without requiring new tables.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. yes. you can use ParameterTypeKeyValue in glazed for the arg thing. I'm not sure I understand 2, so ignore."
+
+**Assistant interpretation:** Add CLI flags for tool/arg filters using ParameterTypeKeyValue and wire them into the indexed search path.
+
+**Inferred user intent:** Quickly query tool calls by argument values from the CLI.
+
+**Commit (code):** 1d97a54 — "search: add tool arg filters"
+
+### What I did
+
+- Added `--tool` and `--arg` flags to `codex-session search` (key:value format).
+- Normalized tool-call arguments into stable tokens during indexing.
+- Built FTS queries from `--arg` filters and ensured scope validation.
+- Tested the command against real data.
+
+### Why
+
+- This delivers structured tool-call queries without introducing new tables or complex SQL joins.
+
+### What worked
+
+- `codex-session search --scope tools --tool docmgr --arg foo:bar` executed successfully (empty result expected on current data).
+
+### What didn't work
+
+- Initial attempt failed because `ParameterTypeKeyValue` uses `key:value` (not `key=value`); updated help text and validation.
+
+### What I learned
+
+- Glazed’s key/value parameter parsing enforces colon separators; CLI help needs to reflect that to avoid user confusion.
+
+### What was tricky to build
+
+- Ensuring tokenization is stable and FTS-friendly while still useful for human-readable query syntax.
+
+### What warrants a second pair of eyes
+
+- Whether the tokenization strategy (key__value + value) is sufficient for all real-world argument shapes.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/build.go` for tokenization and indexing logic.
+- Review `codex-sessions/internal/indexdb/search.go` for FTS query composition.
+- Review `codex-sessions/cmd/codex-session/search.go` for flag wiring and validation.
+- Validate with `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --arg foo:bar --max-results 5`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --arg foo:bar --max-results 5`

@@ -9,3 +9,4 @@
 - [x] Add metadata K/V extraction + upsert into session_meta_kv
 - [x] Implement SQLite-first list with staleness reindex (opt-out flag)
 - [x] Add tool call arg parsing + columns for structured querying
+- [x] Add search flags for tool + args (ParameterTypeKeyValue) and wire into indexdb.Search
