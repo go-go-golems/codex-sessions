@@ -536,3 +536,61 @@ I added `--tool` and `--arg` filters (using Glazed `ParameterTypeKeyValue`) so u
 
 - Commands run:
   - `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --arg foo:bar --max-results 5`
+
+## Step 9: Backfill list when index is incomplete + verify reindex
+
+I adjusted the list command to backfill the index when the SQLite database has fewer rows than the requested limit. This ensures `codex-session list` actually reindexes the subset it needs and returns accurate results even when the DB is sparse or freshly reset. I also added a verification script and ran it against real data (~400 sessions).
+
+### Prompt Context
+
+**User prompt (verbatim):** "so if you run codex-session list and such, I don't think it actually reindexes or does the right thing, can you verify? I have around 400 conversations in there."
+
+**Assistant interpretation:** Verify list behavior against real data and fix any issues preventing reindex/backfill.
+
+**Inferred user intent:** Ensure list uses the index correctly and refreshes data as expected with a large archive.
+
+**Commit (code):** b186982 — "list: backfill index when sparse"
+
+### What I did
+
+- Added a backfill path when the index has fewer rows than `--limit`.
+- Added a verification script in the ticket `scripts/` folder.
+- Ran stats → list → stats and confirmed the session count increased from 1 to 5 after list.
+
+### Why
+
+- The previous behavior only reindexed stale rows if they already existed in the DB; it did not populate missing rows.
+
+### What worked
+
+- The verification script showed the index row count increased after running list.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Sparse indexes need an explicit backfill path to be useful on first use.
+
+### What was tricky to build
+
+- Balancing reindex correctness with performance by limiting backfill to the requested list size.
+
+### What warrants a second pair of eyes
+
+- Whether backfilling only the requested limit is sufficient or if a broader refresh is desirable.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/cmd/codex-session/list.go` for the backfill logic.
+- Run `ttmp/2026/01/25/CODEX-008-IMPROVE-CODEX-SESSION--improve-codex-session/scripts/02-verify-list-reindex.sh`.
+
+### Technical details
+
+- Commands run:
+  - `ttmp/2026/01/25/CODEX-008-IMPROVE-CODEX-SESSION--improve-codex-session/scripts/02-verify-list-reindex.sh`

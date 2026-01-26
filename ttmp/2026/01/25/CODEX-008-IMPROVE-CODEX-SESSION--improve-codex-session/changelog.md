@@ -65,3 +65,12 @@ Step 8: add tool/arg filters to indexed search (commit 1d97a54)
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/build.go — Tokenize tool-call arguments for FTS
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/search.go — Compose tool arg FTS query
 
+
+## 2026-01-26
+
+Step 9: backfill list when index is sparse (commit b186982)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/list.go — Backfill list when rows < limit
+
