@@ -180,6 +180,31 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		return res
 	}
 
+	if _, err := tx.ExecContext(ctx, "DELETE FROM session_meta_kv WHERE session_id = ?", meta.ID); err != nil {
+		res.Error = err.Error()
+		res.Duration = time.Since(start)
+		return res
+	}
+	if len(metaPayload) > 0 {
+		metaKVs := flattenMetaPayload(metaPayload)
+		for _, kv := range metaKVs {
+			if kv.key == "" || kv.value == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx,
+				"INSERT INTO session_meta_kv(session_id, key, value, value_type) VALUES(?, ?, ?, ?)",
+				meta.ID,
+				kv.key,
+				kv.value,
+				kv.valueType,
+			); err != nil {
+				res.Error = err.Error()
+				res.Duration = time.Since(start)
+				return res
+			}
+		}
+	}
+
 	// Clear previous rows for this session for idempotent rebuilds.
 	clearStmts := []string{
 		"DELETE FROM messages WHERE session_id = ?",
@@ -406,4 +431,56 @@ func stringFromAny(v any) string {
 		}
 	}
 	return ""
+}
+
+type metaKV struct {
+	key       string
+	value     string
+	valueType string
+}
+
+func flattenMetaPayload(payload map[string]any) []metaKV {
+	var out []metaKV
+	for k, v := range payload {
+		flattenMetaValue(k, v, &out)
+	}
+	return out
+}
+
+func flattenMetaValue(prefix string, v any, out *[]metaKV) {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, child := range t {
+			childKey := prefix + "." + k
+			if prefix == "" {
+				childKey = k
+			}
+			flattenMetaValue(childKey, child, out)
+		}
+	case []any:
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		*out = append(*out, metaKV{key: prefix, value: string(b), valueType: "json"})
+	case string:
+		*out = append(*out, metaKV{key: prefix, value: t, valueType: "string"})
+	case float64:
+		*out = append(*out, metaKV{key: prefix, value: fmt.Sprintf("%v", t), valueType: "number"})
+	case bool:
+		if t {
+			*out = append(*out, metaKV{key: prefix, value: "true", valueType: "bool"})
+		} else {
+			*out = append(*out, metaKV{key: prefix, value: "false", valueType: "bool"})
+		}
+	default:
+		if t == nil {
+			return
+		}
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		*out = append(*out, metaKV{key: prefix, value: string(b), valueType: "json"})
+	}
 }
