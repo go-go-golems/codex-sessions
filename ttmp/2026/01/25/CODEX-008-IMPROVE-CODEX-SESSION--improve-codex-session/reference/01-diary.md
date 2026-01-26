@@ -288,3 +288,62 @@ I extended the index build to persist metadata-related columns (including reflec
 
 - Commands run:
   - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`
+
+## Step 5: Add session_meta_kv extraction and upsert
+
+I added K/V extraction from session_meta payloads and inserted those rows into `session_meta_kv` during indexing. This enables fast metadata filtering without expanding the sessions table schema for every new metadata field.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok we don't need new tables then. Implement the schema/index changes from the design doc, Create tasks, work on them, git commit, check them off, update your diary."
+
+**Assistant interpretation:** Complete the K/V indexing work, verify with real data, and record the step.
+
+**Inferred user intent:** Get the metadata K/V table working as part of the indexing flow.
+
+**Commit (code):** ee71fe3 — "indexdb: upsert session_meta_kv during indexing"
+
+### What I did
+
+- Implemented `flattenMetaPayload` to flatten nested metadata into dot-notation keys.
+- Added `session_meta_kv` deletes + inserts during each index rebuild.
+- Validated via a real `index build` run.
+- Checked off the K/V indexing task.
+
+### Why
+
+- This delivers fast key/value queries for metadata without adding new columns for each new field.
+
+### What worked
+
+- Indexing completed successfully with the new `session_meta_kv` writes.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Flattening nested objects with dot-notation is a pragmatic compromise between flexibility and queryability.
+
+### What was tricky to build
+
+- Handling arrays while keeping a unique `(session_id, key)` constraint.
+
+### What warrants a second pair of eyes
+
+- Whether arrays should be stored as JSON blobs or expanded into multiple rows (schema currently uses one row per key).
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/build.go` for the K/V extraction and insert logic.
+- Validate with `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`

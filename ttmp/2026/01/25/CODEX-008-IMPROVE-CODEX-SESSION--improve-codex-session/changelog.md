@@ -23,3 +23,12 @@ Step 4: store metadata columns + reflection flag in index build (commit 3cfdaee)
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/build.go — Persist meta_json
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/sessions/parser.go — ReadSessionMetaPayload helper
 
+
+## 2026-01-25
+
+Step 5: add session_meta_kv extraction + upsert (commit ee71fe3)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/build.go — Flatten session_meta into K/V rows
+
