@@ -653,3 +653,63 @@ I updated the indexed search flow to allow `--tool` without a text query or argu
 
 - Commands run:
   - `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --max-results 5`
+
+## Step 11: Initialize help system + document TUI setup
+
+I wired the Codex Session CLI to initialize the Glazed help system (including the TUI help UI), and clarified the setup steps in the Glazed tutorial. This mirrors the `glazed/cmd/glaze/main.go` pattern and ensures users can access `codex-session help --ui`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Allow the tool search to have no arg / no query, and just look for calls to that tool. Also make sure you intiialzize the TUI helpsystem for glazed like in glazed/cmd/glaze/main.go , and if it was unclear, to specify how to do that in glazed/pkg/doc/tutorials/05-build-first-command.md"
+
+**Assistant interpretation:** Add help-system initialization to codex-session and clarify the documentation steps for TUI help.
+
+**Inferred user intent:** Ensure the help UI is fully wired and clearly documented for developers.
+
+**Commit (code):** 10e2784 — "cli: initialize help system and docs"
+
+### What I did
+
+- Added a `doc` package with embedded help markdown.
+- Initialized `help.NewHelpSystem()` and `help_cmd.SetupCobraRootCommand` in the CLI entry point.
+- Updated the Glazed tutorial to explicitly call out the TUI help UI.
+
+### Why
+
+- Without the help system wiring, the `help --ui` flow is not available and the CLI lacks the enhanced help experience.
+
+### What worked
+
+- `codex-session help --help` now shows the TUI help option.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- The Glazed help system works with minimal embedded docs and still provides the TUI interface.
+
+### What was tricky to build
+
+- Ensuring the embedded docs have valid frontmatter so they show up in the help listing.
+
+### What warrants a second pair of eyes
+
+- Whether the initial help page content is sufficient for discoverability.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/doc/doc.go` and `codex-sessions/internal/doc/01-overview.md`.
+- Review `codex-sessions/cmd/codex-session/main.go` for help setup.
+- Review `glazed/pkg/doc/tutorials/05-build-first-command.md` for documentation clarity.
+- Validate with `go run ./cmd/codex-session help --help`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session help --help`

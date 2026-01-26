@@ -84,3 +84,14 @@ Step 10: allow tool-only search (commit 3e12f53)
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/search.go — Relax validation for tool-only
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/search.go — Tool-only query path
 
+
+## 2026-01-26
+
+Step 11: initialize help system + doc TUI setup (commit 10e2784)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/main.go — Help system initialization
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/doc/01-overview.md — Embedded help docs
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/glazed/pkg/doc/tutorials/05-build-first-command.md — Clarify TUI help setup
+
