@@ -98,7 +98,7 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				"tool",
 				fields.TypeString,
 				fields.WithDefault(""),
-				fields.WithHelp("Indexed mode only: filter tool name (for tool search)"),
+				fields.WithHelp("Indexed mode only: filter tool name (for tool search; can be used alone)"),
 			),
 			fields.New(
 				"arg",
@@ -188,8 +188,8 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
-	if strings.TrimSpace(settings.Query) == "" && len(settings.Args) == 0 {
-		return errors.New("--query is required (or provide --arg key:value for tool search)")
+	if strings.TrimSpace(settings.Query) == "" && len(settings.Args) == 0 && strings.TrimSpace(settings.Tool) == "" {
+		return errors.New("--query is required (or provide --tool and/or --arg key:value for tool search)")
 	}
 
 	var since *time.Time
@@ -233,9 +233,6 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	if settings.UseIndex && !settings.CaseSensitive {
 		if (settings.Tool != "" || len(settings.Args) > 0) && settings.Scope == "messages" {
 			return errors.New("--tool/--arg requires --scope tools or --scope all")
-		}
-		if settings.Tool != "" && len(settings.Args) == 0 && strings.TrimSpace(settings.Query) == "" {
-			return errors.New("--tool without --query or --arg is not supported")
 		}
 		if _, err := os.Stat(indexPath); err == nil {
 			db, err := indexdb.Open(indexPath)

@@ -125,6 +125,10 @@ func searchToolCalls(ctx context.Context, db *sql.DB, opts SearchOptions) ([]Sea
 		maxResults = 50
 	}
 
+	if strings.TrimSpace(opts.Query) == "" && len(opts.ArgFilters) == 0 {
+		return searchToolCallsByTool(ctx, db, opts, maxResults)
+	}
+
 	var since string
 	if opts.Since != nil {
 		since = opts.Since.UTC().Format(time.RFC3339)
@@ -212,7 +216,7 @@ func buildToolCallQuery(opts SearchOptions) (string, error) {
 		tokens = append(tokens, fmt.Sprintf("%s__%s", keyToken, valToken))
 	}
 	if base == "" && len(tokens) == 0 {
-		return "", fmt.Errorf("empty tool search query; supply --query or --arg")
+		return "", fmt.Errorf("empty tool search query; supply --query, --arg, or --tool")
 	}
 	if len(tokens) == 0 {
 		return base, nil
@@ -228,6 +232,10 @@ func searchToolOutputs(ctx context.Context, db *sql.DB, opts SearchOptions) ([]S
 	maxResults := opts.MaxResults
 	if maxResults <= 0 {
 		maxResults = 50
+	}
+
+	if strings.TrimSpace(opts.Query) == "" && len(opts.ArgFilters) == 0 && strings.TrimSpace(opts.Tool) != "" {
+		return searchToolOutputsByTool(ctx, db, opts, maxResults)
 	}
 
 	var since string
@@ -262,6 +270,142 @@ WHERE tool_outputs_fts MATCH ?
 ORDER BY score
 LIMIT ?;`,
 		opts.Query,
+		opts.Project, opts.Project,
+		since, since,
+		until, until,
+		maxResults,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []SearchHit
+	for rows.Next() {
+		h := SearchHit{Kind: "tool_output"}
+		if err := rows.Scan(
+			&h.SessionID,
+			&h.Project,
+			&h.StartedAt,
+			&h.UpdatedAt,
+			&h.Title,
+			&h.SourcePath,
+			&h.Timestamp,
+			&h.Role,
+			&h.Tool,
+			&h.Snippet,
+			&h.Score,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func searchToolCallsByTool(ctx context.Context, db *sql.DB, opts SearchOptions, maxResults int) ([]SearchHit, error) {
+	var since string
+	if opts.Since != nil {
+		since = opts.Since.UTC().Format(time.RFC3339)
+	}
+	var until string
+	if opts.Until != nil {
+		until = opts.Until.UTC().Format(time.RFC3339)
+	}
+
+	rows, err := db.QueryContext(ctx, `
+SELECT
+  s.session_id,
+  s.project,
+  s.started_at,
+  s.updated_at,
+  s.title,
+  s.source_path,
+  tc.ts,
+  '' AS role,
+  tc.tool,
+  '' AS snippet,
+  0.0 AS score
+FROM tool_calls tc
+JOIN sessions s ON s.session_id = tc.session_id
+WHERE (? = '' OR tc.tool = ?)
+  AND (? = '' OR s.project = ?)
+  AND (? = '' OR s.started_at >= ?)
+  AND (? = '' OR s.started_at <= ?)
+ORDER BY tc.ts DESC
+LIMIT ?;`,
+		opts.Tool, opts.Tool,
+		opts.Project, opts.Project,
+		since, since,
+		until, until,
+		maxResults,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []SearchHit
+	for rows.Next() {
+		h := SearchHit{Kind: "tool_call"}
+		if err := rows.Scan(
+			&h.SessionID,
+			&h.Project,
+			&h.StartedAt,
+			&h.UpdatedAt,
+			&h.Title,
+			&h.SourcePath,
+			&h.Timestamp,
+			&h.Role,
+			&h.Tool,
+			&h.Snippet,
+			&h.Score,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func searchToolOutputsByTool(ctx context.Context, db *sql.DB, opts SearchOptions, maxResults int) ([]SearchHit, error) {
+	var since string
+	if opts.Since != nil {
+		since = opts.Since.UTC().Format(time.RFC3339)
+	}
+	var until string
+	if opts.Until != nil {
+		until = opts.Until.UTC().Format(time.RFC3339)
+	}
+
+	rows, err := db.QueryContext(ctx, `
+SELECT
+  s.session_id,
+  s.project,
+  s.started_at,
+  s.updated_at,
+  s.title,
+  s.source_path,
+  to1.ts,
+  '' AS role,
+  to1.tool,
+  '' AS snippet,
+  0.0 AS score
+FROM tool_outputs to1
+JOIN sessions s ON s.session_id = to1.session_id
+WHERE (? = '' OR to1.tool = ?)
+  AND (? = '' OR s.project = ?)
+  AND (? = '' OR s.started_at >= ?)
+  AND (? = '' OR s.started_at <= ?)
+ORDER BY to1.ts DESC
+LIMIT ?;`,
+		opts.Tool, opts.Tool,
 		opts.Project, opts.Project,
 		since, since,
 		until, until,
