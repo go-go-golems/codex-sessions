@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -21,9 +22,11 @@ type SearchOptions struct {
 	MaxResults int
 	Scope      SearchScope
 
-	Project string
-	Since   *time.Time
-	Until   *time.Time
+	Tool       string
+	ArgFilters map[string]string
+	Project    string
+	Since      *time.Time
+	Until      *time.Time
 }
 
 type SearchHit struct {
@@ -131,6 +134,11 @@ func searchToolCalls(ctx context.Context, db *sql.DB, opts SearchOptions) ([]Sea
 		until = opts.Until.UTC().Format(time.RFC3339)
 	}
 
+	query, err := buildToolCallQuery(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := db.QueryContext(ctx, `
 SELECT
   s.session_id,
@@ -148,12 +156,14 @@ FROM tool_calls_fts
 JOIN tool_calls tc ON tc.id = tool_calls_fts.rowid
 JOIN sessions s ON s.session_id = tool_calls_fts.session_id
 WHERE tool_calls_fts MATCH ?
+  AND (? = '' OR tc.tool = ?)
   AND (? = '' OR s.project = ?)
   AND (? = '' OR s.started_at >= ?)
   AND (? = '' OR s.started_at <= ?)
 ORDER BY score
 LIMIT ?;`,
-		opts.Query,
+		query,
+		opts.Tool, opts.Tool,
 		opts.Project, opts.Project,
 		since, since,
 		until, until,
@@ -188,6 +198,30 @@ LIMIT ?;`,
 		return nil, err
 	}
 	return out, nil
+}
+
+func buildToolCallQuery(opts SearchOptions) (string, error) {
+	base := strings.TrimSpace(opts.Query)
+	var tokens []string
+	for key, value := range opts.ArgFilters {
+		keyToken := normalizeArgKey(key)
+		valToken := normalizeArgToken(value)
+		if keyToken == "" || valToken == "" {
+			continue
+		}
+		tokens = append(tokens, fmt.Sprintf("%s__%s", keyToken, valToken))
+	}
+	if base == "" && len(tokens) == 0 {
+		return "", fmt.Errorf("empty tool search query; supply --query or --arg")
+	}
+	if len(tokens) == 0 {
+		return base, nil
+	}
+	argQuery := strings.Join(tokens, " AND ")
+	if base == "" {
+		return argQuery, nil
+	}
+	return fmt.Sprintf("(%s) AND %s", base, argQuery), nil
 }
 
 func searchToolOutputs(ctx context.Context, db *sql.DB, opts SearchOptions) ([]SearchHit, error) {

@@ -21,23 +21,25 @@ import (
 )
 
 type SearchSettings struct {
-	SessionsRoot      string `glazed.parameter:"sessions-root"`
-	IndexPath         string `glazed.parameter:"index-path"`
-	UseIndex          bool   `glazed.parameter:"use-index"`
-	NoReindex         bool   `glazed.parameter:"no-reindex"`
-	Scope             string `glazed.parameter:"scope"`
-	Query             string `glazed.parameter:"query"`
-	Project           string `glazed.parameter:"project"`
-	Since             string `glazed.parameter:"since"`
-	Until             string `glazed.parameter:"until"`
-	Limit             int    `glazed.parameter:"limit"`
-	MaxResults        int    `glazed.parameter:"max-results"`
-	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
-	IncludeCopies     bool   `glazed.parameter:"include-reflection-copies"`
-	CaseSensitive     bool   `glazed.parameter:"case-sensitive"`
-	PerMessage        bool   `glazed.parameter:"per-message"`
-	MaxSnippetChars   int    `glazed.parameter:"max-snippet-chars"`
-	SingleLine        bool   `glazed.parameter:"single-line"`
+	SessionsRoot      string            `glazed.parameter:"sessions-root"`
+	IndexPath         string            `glazed.parameter:"index-path"`
+	UseIndex          bool              `glazed.parameter:"use-index"`
+	NoReindex         bool              `glazed.parameter:"no-reindex"`
+	Scope             string            `glazed.parameter:"scope"`
+	Query             string            `glazed.parameter:"query"`
+	Tool              string            `glazed.parameter:"tool"`
+	Args              map[string]string `glazed.parameter:"arg"`
+	Project           string            `glazed.parameter:"project"`
+	Since             string            `glazed.parameter:"since"`
+	Until             string            `glazed.parameter:"until"`
+	Limit             int               `glazed.parameter:"limit"`
+	MaxResults        int               `glazed.parameter:"max-results"`
+	IncludeMostRecent bool              `glazed.parameter:"include-most-recent"`
+	IncludeCopies     bool              `glazed.parameter:"include-reflection-copies"`
+	CaseSensitive     bool              `glazed.parameter:"case-sensitive"`
+	PerMessage        bool              `glazed.parameter:"per-message"`
+	MaxSnippetChars   int               `glazed.parameter:"max-snippet-chars"`
+	SingleLine        bool              `glazed.parameter:"single-line"`
 }
 
 type SearchCommand struct {
@@ -91,6 +93,18 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeString,
 				fields.WithDefault(""),
 				fields.WithHelp("Query substring to search for (required)"),
+			),
+			fields.New(
+				"tool",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Indexed mode only: filter tool name (for tool search)"),
+			),
+			fields.New(
+				"arg",
+				fields.TypeKeyValue,
+				fields.WithDefault(map[string]string{}),
+				fields.WithHelp("Indexed mode only: filter tool-call arguments as key:value (repeatable)"),
 			),
 			fields.New(
 				"project",
@@ -174,8 +188,8 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
-	if strings.TrimSpace(settings.Query) == "" {
-		return errors.New("--query is required")
+	if strings.TrimSpace(settings.Query) == "" && len(settings.Args) == 0 {
+		return errors.New("--query is required (or provide --arg key:value for tool search)")
 	}
 
 	var since *time.Time
@@ -217,6 +231,12 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	indexPath = filepath.Clean(indexPath)
 
 	if settings.UseIndex && !settings.CaseSensitive {
+		if (settings.Tool != "" || len(settings.Args) > 0) && settings.Scope == "messages" {
+			return errors.New("--tool/--arg requires --scope tools or --scope all")
+		}
+		if settings.Tool != "" && len(settings.Args) == 0 && strings.TrimSpace(settings.Query) == "" {
+			return errors.New("--tool without --query or --arg is not supported")
+		}
 		if _, err := os.Stat(indexPath); err == nil {
 			db, err := indexdb.Open(indexPath)
 			if err != nil {
@@ -260,6 +280,8 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 				Query:      settings.Query,
 				MaxResults: settings.MaxResults,
 				Scope:      scope,
+				Tool:       settings.Tool,
+				ArgFilters: settings.Args,
 				Project:    settings.Project,
 				Since:      since,
 				Until:      until,

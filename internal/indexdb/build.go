@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-go-golems/codex-session/internal/sessions"
 )
@@ -531,18 +532,9 @@ func collectArgumentTokens(prefix string, v any, out *[]string) {
 			collectArgumentTokens(prefix, child, out)
 		}
 	case string:
-		if prefix == "" {
-			*out = append(*out, t)
-			return
-		}
-		*out = append(*out, fmt.Sprintf("%s=%s", prefix, t))
+		appendArgTokens(prefix, t, out)
 	case float64, bool:
-		val := fmt.Sprintf("%v", t)
-		if prefix == "" {
-			*out = append(*out, val)
-			return
-		}
-		*out = append(*out, fmt.Sprintf("%s=%s", prefix, val))
+		appendArgTokens(prefix, fmt.Sprintf("%v", t), out)
 	default:
 		if t == nil {
 			return
@@ -551,11 +543,7 @@ func collectArgumentTokens(prefix string, v any, out *[]string) {
 		if err != nil {
 			return
 		}
-		if prefix == "" {
-			*out = append(*out, string(b))
-			return
-		}
-		*out = append(*out, fmt.Sprintf("%s=%s", prefix, string(b)))
+		appendArgTokens(prefix, string(b), out)
 	}
 }
 
@@ -564,4 +552,48 @@ func ftsArguments(raw string, flat string) string {
 		return flat
 	}
 	return raw
+}
+
+func appendArgTokens(prefix string, value string, out *[]string) {
+	valToken := normalizeArgToken(value)
+	if valToken == "" {
+		return
+	}
+	if prefix == "" {
+		*out = append(*out, valToken)
+		return
+	}
+	keyToken := normalizeArgKey(prefix)
+	if keyToken == "" {
+		*out = append(*out, valToken)
+		return
+	}
+	*out = append(*out, fmt.Sprintf("%s__%s", keyToken, valToken))
+	*out = append(*out, valToken)
+}
+
+func normalizeArgKey(s string) string {
+	return normalizeArgToken(strings.ReplaceAll(s, ".", "_"))
+}
+
+func normalizeArgToken(s string) string {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	lastUnderscore := false
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			lastUnderscore = false
+			continue
+		}
+		if !lastUnderscore {
+			b.WriteRune('_')
+			lastUnderscore = true
+		}
+	}
+	out := strings.Trim(b.String(), "_")
+	return out
 }
