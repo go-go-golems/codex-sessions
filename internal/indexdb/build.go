@@ -3,6 +3,9 @@ package indexdb
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-go-golems/codex-session/internal/sessions"
@@ -66,6 +69,39 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		Status:     SessionFailed,
 	}
 
+	metaPayload, _ := sessions.ReadSessionMetaPayload(meta.Path)
+	metaJSON := ""
+	metaCwd := meta.Cwd
+	metaHost := ""
+	metaModel := ""
+	metaClient := ""
+	metaSessionVersion := ""
+	if metaPayload != nil {
+		metaJSON = marshalMetaJSON(metaPayload)
+		if v := stringFromAny(metaPayload["cwd"]); v != "" {
+			metaCwd = v
+		}
+		metaHost = stringFromAny(metaPayload["host"])
+		metaModel = stringFromAny(metaPayload["model"])
+		metaClient = stringFromAny(metaPayload["client"])
+		metaSessionVersion = stringFromAny(metaPayload["session_version"])
+		if metaSessionVersion == "" {
+			metaSessionVersion = stringFromAny(metaPayload["version"])
+		}
+	}
+
+	var sourceMtime int64
+	var sourceSize int64
+	if info, err := os.Stat(meta.Path); err == nil {
+		sourceMtime = info.ModTime().Unix()
+		sourceSize = info.Size()
+	}
+	sourceHash := ""
+	isReflectionCopy := 0
+	if ok, err := sessions.IsReflectionCopy(meta.Path, sessions.DefaultSelfReflectionPrefix); err == nil && ok {
+		isReflectionCopy = 1
+	}
+
 	updatedAt, err := sessions.ConversationUpdatedAt(meta.Path)
 	if err != nil {
 		res.Error = err.Error()
@@ -97,15 +133,29 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO sessions(session_id, project, started_at, updated_at, title, source_path, indexed_at)
-		 VALUES(?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO sessions(
+			session_id, project, started_at, updated_at, title, source_path, indexed_at,
+			meta_json, cwd, host, model, client, session_version,
+			source_mtime, source_size, source_hash, is_reflection_copy
+		)
+		 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(session_id) DO UPDATE SET
 		   project=excluded.project,
 		   started_at=excluded.started_at,
 		   updated_at=excluded.updated_at,
 		   title=excluded.title,
 		   source_path=excluded.source_path,
-		   indexed_at=excluded.indexed_at`,
+		   indexed_at=excluded.indexed_at,
+		   meta_json=excluded.meta_json,
+		   cwd=excluded.cwd,
+		   host=excluded.host,
+		   model=excluded.model,
+		   client=excluded.client,
+		   session_version=excluded.session_version,
+		   source_mtime=excluded.source_mtime,
+		   source_size=excluded.source_size,
+		   source_hash=excluded.source_hash,
+		   is_reflection_copy=excluded.is_reflection_copy`,
 		meta.ID,
 		res.Project,
 		res.StartedAt,
@@ -113,6 +163,16 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		title,
 		meta.Path,
 		now,
+		metaJSON,
+		metaCwd,
+		metaHost,
+		metaModel,
+		metaClient,
+		metaSessionVersion,
+		sourceMtime,
+		sourceSize,
+		sourceHash,
+		isReflectionCopy,
 	)
 	if err != nil {
 		res.Error = err.Error()
@@ -303,4 +363,47 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 	res.Status = SessionIndexed
 	res.Duration = time.Since(start)
 	return res
+}
+
+func marshalMetaJSON(payload map[string]any) string {
+	if payload == nil {
+		return ""
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func stringFromAny(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case fmt.Stringer:
+		return t.String()
+	case float64:
+		return fmt.Sprintf("%v", t)
+	case bool:
+		if t {
+			return "true"
+		}
+		return "false"
+	case map[string]any:
+		for _, key := range []string{"name", "id", "version"} {
+			if s, ok := t[key].(string); ok && s != "" {
+				return s
+			}
+		}
+		b, err := json.Marshal(t)
+		if err == nil {
+			return string(b)
+		}
+	case []any:
+		b, err := json.Marshal(t)
+		if err == nil {
+			return string(b)
+		}
+	}
+	return ""
 }
