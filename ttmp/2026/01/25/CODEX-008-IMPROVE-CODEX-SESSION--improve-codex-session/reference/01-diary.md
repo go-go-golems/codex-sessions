@@ -228,3 +228,63 @@ I added a schema migration to version 2 that introduces new metadata columns on 
 
 - Commands run:
   - `go run ./cmd/codex-session index stats --sessions-root /home/manuel/.codex/sessions`
+
+## Step 4: Populate metadata columns, reflection flag, and file signature
+
+I extended the index build to persist metadata-related columns (including reflection-copy flag and file signatures) into the SQLite `sessions` table. This sets the foundation for SQLite-first listing and staleness-aware refresh by keeping cheap, queryable metadata on each session row.
+
+### Prompt Context
+
+**User prompt (verbatim):** "ok we don't need new tables then. Implement the schema/index changes from the design doc, Create tasks, work on them, git commit, check them off, update your diary."
+
+**Assistant interpretation:** Implement the next chunk of index changes and validate them against real data.
+
+**Inferred user intent:** Progressively implement the index plan with explicit commits, verification, and documentation.
+
+**Commit (code):** 3cfdaee — "indexdb: store metadata columns and file signature"
+
+### What I did
+
+- Added `ReadSessionMetaPayload` to capture the raw session_meta payload.
+- Stored `meta_json`, `cwd`, `host`, `model`, `client`, `session_version`, `source_mtime`, `source_size`, and `is_reflection_copy` during indexing.
+- Verified with a real data index build (limit 1).
+- Checked off the metadata population task.
+
+### Why
+
+- The SQLite row now carries enough metadata to be used as the default list/read path and to detect staleness without full rescans.
+
+### What worked
+
+- `codex-session index build` succeeded on real data and completed the row insert with the new columns.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Reading the session_meta payload is straightforward and low-cost; it can be reused for K/V flattening next.
+
+### What was tricky to build
+
+- Deciding how to coerce heterogeneous metadata values into string columns while keeping them useful.
+
+### What warrants a second pair of eyes
+
+- The `stringFromAny` heuristics and whether storing JSON for complex values is acceptable.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/build.go` for the new metadata columns and reflection-copy capture.
+- Review `codex-sessions/internal/sessions/parser.go` for the payload extraction helper.
+- Validate with `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`
