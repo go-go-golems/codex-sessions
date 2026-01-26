@@ -162,28 +162,29 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 			return err
 		}
 
-		if len(rows) == 0 && !settings.NoReindex {
-			metas, err := collectMetasFromFS(settings, since, until)
-			if err != nil {
-				return err
-			}
-			buildOpts := indexdb.DefaultBuildOptions()
-			buildOpts.Force = true
-			for _, meta := range metas {
-				_ = indexdb.BuildSessionIndex(ctx, db, meta, buildOpts)
-			}
-			rows, err = indexdb.ListSessions(ctx, db, indexdb.ListFilters{
-				Project:                 settings.Project,
-				Since:                   since,
-				Until:                   until,
-				IncludeReflectionCopies: settings.IncludeCopies,
-			})
-			if err != nil {
-				return err
-			}
-		}
-
 		if !settings.NoReindex {
+			shouldBackfill := settings.Limit > 0 && len(rows) < settings.Limit
+			if shouldBackfill {
+				metas, err := collectMetasFromFS(settings, since, until)
+				if err != nil {
+					return err
+				}
+				buildOpts := indexdb.DefaultBuildOptions()
+				buildOpts.Force = true
+				for _, meta := range metas {
+					_ = indexdb.BuildSessionIndex(ctx, db, meta, buildOpts)
+				}
+				rows, err = indexdb.ListSessions(ctx, db, indexdb.ListFilters{
+					Project:                 settings.Project,
+					Since:                   since,
+					Until:                   until,
+					IncludeReflectionCopies: settings.IncludeCopies,
+				})
+				if err != nil {
+					return err
+				}
+			}
+
 			rowsForReindex := filterRows(rows, settings.IncludeMostRecent, settings.Limit)
 			stale := indexdb.FindStaleRows(rowsForReindex)
 			if len(stale) > 0 {
