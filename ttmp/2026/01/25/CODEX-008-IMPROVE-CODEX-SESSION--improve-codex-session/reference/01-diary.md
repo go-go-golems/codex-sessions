@@ -407,3 +407,71 @@ I wired the list and search commands to prefer the SQLite index and to refresh s
 
 - Commands run:
   - `go run ./cmd/codex-session list --sessions-root /home/manuel/.codex/sessions --limit 3 --no-reindex`
+
+## Step 7: Reset schema (no migration) + tool call args columns
+
+I removed backward-compatible migrations and replaced them with a destructive schema reset when the user_version changes. I also expanded tool call/tool output storage to capture `call_id`, raw JSON arguments, and a flattened key=value representation to support structured queries.
+
+### Prompt Context
+
+**User prompt (verbatim):** "feel free to just erase the existing db btw, we don't really need mgiration or backwards compat"
+
+**Assistant interpretation:** Drop migration support and allow wiping the existing index DB when schema changes.
+
+**Inferred user intent:** Prefer a clean reindex over complex migrations to simplify maintenance.
+
+**Commit (code):** 40b5089 — "indexdb: reset schema and store tool call args"
+
+### What I did
+
+- Simplified `EnsureSchema` to drop all tables if `user_version` differs from the current schema.
+- Added tool call/outputs columns for `call_id`, `arguments_json`, and `arguments_flat`.
+- Flattened tool arguments into `key=value` tokens to support query patterns like `tool:docmgr` + `arg=foobar`.
+- Recorded the DB inspection script in the ticket scripts folder.
+- Rebuilt the index against real data to validate schema reset + inserts.
+
+### Why
+
+- Destructive resets are acceptable per request and remove migration complexity.
+- Tool-call argument columns enable structured querying without new tables.
+
+### What worked
+
+- `index stats` reset the DB and reported `schema_user_version = 5`.
+- `index build` succeeded on real data after reset.
+
+### What didn't work
+
+- Initial build failed when the sessions table lacked new columns; fixed by updating the create schema and bumping the schema version to force reset.
+
+### What I learned
+
+- When removing migrations, schema changes must be fully reflected in the CREATE statements or inserts will fail.
+
+### What was tricky to build
+
+- Ensuring the reset path doesn’t silently keep stale tables when user_version matches but schema definition has drifted.
+
+### What warrants a second pair of eyes
+
+- The flattened argument encoding and its usefulness for real search queries; may need to adjust tokenization or storage format.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/schema.go` for reset behavior and schema definitions.
+- Review `codex-sessions/internal/sessions/facets.go` for call_id extraction.
+- Review `codex-sessions/internal/indexdb/build.go` for arguments_flat indexing.
+- Validate with:
+  - `go run ./cmd/codex-session index stats --sessions-root /home/manuel/.codex/sessions`
+  - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`
+
+### Technical details
+
+- Commands run:
+  - `python3 /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/ttmp/2026/01/25/CODEX-008-IMPROVE-CODEX-SESSION--improve-codex-session/scripts/01-check-tool-call-columns.py`
+  - `go run ./cmd/codex-session index stats --sessions-root /home/manuel/.codex/sessions`
+  - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`

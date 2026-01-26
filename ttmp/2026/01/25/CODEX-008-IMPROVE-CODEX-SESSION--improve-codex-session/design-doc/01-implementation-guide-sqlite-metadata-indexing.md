@@ -20,7 +20,7 @@ RelatedFiles:
       Note: Content-based reflection-copy detection
 ExternalSources: []
 Summary: Implementation plan to store full session metadata in SQLite, persist reflection-copy flags, default to DB reads/writes, and auto-reindex on staleness.
-LastUpdated: 2026-01-26T09:45:00-05:00
+LastUpdated: 2026-01-26T10:30:00-05:00
 WhatFor: Guide implementation of SQLite-first metadata + indexing and staleness-aware refresh behavior.
 WhenToUse: Use when implementing or reviewing the session index refresh and list/read path changes.
 ---
@@ -128,12 +128,15 @@ JOIN session_meta_kv kv ON kv.session_id = s.session_id
 WHERE kv.key = 'model' AND kv.value = 'gpt-4.1';
 ```
 
-### Schema migrations
+### Schema reset (no backward compatibility)
+
+Per the updated requirement, we **do not** support backward-compatible migrations. Instead:
 
 - Bump `schemaVersion` in `indexdb/schema.go`.
-- Migration steps:
-  - `ALTER TABLE sessions ADD COLUMN ...` for each new column.
-  - Backfill new columns during next reindex, not at migration time.
+- If `user_version` differs, **drop and recreate** all index tables.
+- Rebuild via `codex-session index build`.
+
+This intentionally discards prior index data in favor of a clean schema.
 
 ## 2) SQLite-first read path
 

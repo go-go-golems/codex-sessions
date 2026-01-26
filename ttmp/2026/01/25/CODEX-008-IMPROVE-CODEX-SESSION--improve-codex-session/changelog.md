@@ -43,3 +43,14 @@ Step 6: SQLite-first list/search with staleness refresh (commit 91d1415)
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/search.go — Indexed search now refreshes stale rows
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/list.go — ListSessions + staleness detection helpers
 
+
+## 2026-01-25
+
+Step 7: reset schema + add tool call args columns (commit 40b5089)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/build.go — Store arguments_flat/JSON for tool calls
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/schema.go — Reset schema on version change
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/sessions/facets.go — Capture tool call_id
+
