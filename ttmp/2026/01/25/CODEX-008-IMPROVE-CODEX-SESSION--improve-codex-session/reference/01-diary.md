@@ -347,3 +347,63 @@ I added K/V extraction from session_meta payloads and inserted those rows into `
 
 - Commands run:
   - `go run ./cmd/codex-session index build --sessions-root /home/manuel/.codex/sessions --limit 1 --include-most-recent --force`
+
+## Step 6: SQLite-first list/search with staleness refresh
+
+I wired the list and search commands to prefer the SQLite index and to refresh stale sessions by default. The list command now uses index data when available, and only reindexes rows in the requested output subset unless reindexing is disabled. Search reindexes stale sessions within the filtered scope before running FTS queries.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1. and 2."
+
+**Assistant interpretation:** Implement SQLite-first list/search with staleness reindexing and structured tool-call querying, task by task.
+
+**Inferred user intent:** See concrete code changes for the default DB read path with auto refresh before moving to tool-call argument querying.
+
+**Commit (code):** 91d1415 — "list/search: use SQLite index with stale refresh"
+
+### What I did
+
+- Added `indexdb.ListSessions` with staleness detection helpers.
+- Updated `codex-session list` to use SQLite by default, add `--no-index` and `--no-reindex`, and refresh stale rows.
+- Updated `codex-session search` to reindex stale sessions before indexed search (opt-out via `--no-reindex`).
+- Introduced `indexdb.DefaultBuildOptions` for consistent reindex settings.
+
+### Why
+
+- This makes the index the default source of truth while ensuring stale data is automatically refreshed unless explicitly disabled.
+
+### What worked
+
+- The list command ran successfully against `/home/manuel/.codex/sessions` using the SQLite index.
+
+### What didn't work
+
+- The first list run took a long time because stale detection on older rows triggered mass reindexing; I adjusted the logic to reindex only the rows needed for output.
+
+### What I learned
+
+- Index refresh must be scoped carefully; otherwise, the default list command becomes too slow on large archives.
+
+### What was tricky to build
+
+- Balancing “auto reindex” behavior with practical performance expectations for day-to-day list usage.
+
+### What warrants a second pair of eyes
+
+- Whether the staleness refresh should be scoped to list output or expanded to a broader subset.
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/list.go` for list queries and staleness detection.
+- Review `codex-sessions/cmd/codex-session/list.go` and `codex-sessions/cmd/codex-session/search.go` for new flags and reindex flow.
+- Validate with `go run ./cmd/codex-session list --sessions-root /home/manuel/.codex/sessions --limit 3 --no-reindex`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session list --sessions-root /home/manuel/.codex/sessions --limit 3 --no-reindex`

@@ -32,3 +32,14 @@ Step 5: add session_meta_kv extraction + upsert (commit ee71fe3)
 
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/build.go — Flatten session_meta into K/V rows
 
+
+## 2026-01-25
+
+Step 6: SQLite-first list/search with staleness refresh (commit 91d1415)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/list.go — SQLite-first list path with reindex controls
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/search.go — Indexed search now refreshes stale rows
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/list.go — ListSessions + staleness detection helpers
+
