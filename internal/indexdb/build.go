@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-go-golems/codex-session/internal/sessions"
@@ -318,12 +319,17 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 	if opts.IncludeToolCalls {
 		for _, c := range f.ToolCalls {
 			args := truncateForIndex(c.Arguments, opts.MaxChars)
+			argsJSON := args
+			argsFlat := truncateForIndex(flattenArguments(c.Arguments), opts.MaxChars)
 			r, err := tx.ExecContext(ctx,
-				"INSERT INTO tool_calls(session_id, ts, tool, arguments) VALUES(?, ?, ?, ?)",
+				"INSERT INTO tool_calls(session_id, ts, tool, call_id, arguments, arguments_json, arguments_flat) VALUES(?, ?, ?, ?, ?, ?, ?)",
 				meta.ID,
 				c.Timestamp.UTC().Format(time.RFC3339),
 				c.Name,
+				c.CallID,
 				args,
+				argsJSON,
+				argsFlat,
 			)
 			if err != nil {
 				res.Error = err.Error()
@@ -339,7 +345,7 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 			if _, err := tx.ExecContext(ctx,
 				"INSERT INTO tool_calls_fts(rowid, arguments, session_id, tool_call_id, ts, tool) VALUES(?, ?, ?, ?, ?, ?)",
 				toolCallID,
-				args,
+				ftsArguments(args, argsFlat),
 				meta.ID,
 				toolCallID,
 				c.Timestamp.UTC().Format(time.RFC3339),
@@ -356,10 +362,11 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		for _, o := range f.ToolOutputs {
 			out := truncateForIndex(o.Output, opts.MaxChars)
 			r, err := tx.ExecContext(ctx,
-				"INSERT INTO tool_outputs(session_id, ts, tool, output) VALUES(?, ?, ?, ?)",
+				"INSERT INTO tool_outputs(session_id, ts, tool, call_id, output) VALUES(?, ?, ?, ?, ?)",
 				meta.ID,
 				o.Timestamp.UTC().Format(time.RFC3339),
 				o.Name,
+				o.CallID,
 				out,
 			)
 			if err != nil {
@@ -493,4 +500,68 @@ func flattenMetaValue(prefix string, v any, out *[]metaKV) {
 		}
 		*out = append(*out, metaKV{key: prefix, value: string(b), valueType: "json"})
 	}
+}
+
+func flattenArguments(args string) string {
+	trimmed := strings.TrimSpace(args)
+	if trimmed == "" {
+		return ""
+	}
+	var decoded any
+	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+		return ""
+	}
+	var tokens []string
+	collectArgumentTokens("", decoded, &tokens)
+	return strings.Join(tokens, "\n")
+}
+
+func collectArgumentTokens(prefix string, v any, out *[]string) {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, child := range t {
+			childKey := k
+			if prefix != "" {
+				childKey = prefix + "." + k
+			}
+			collectArgumentTokens(childKey, child, out)
+		}
+	case []any:
+		for _, child := range t {
+			collectArgumentTokens(prefix, child, out)
+		}
+	case string:
+		if prefix == "" {
+			*out = append(*out, t)
+			return
+		}
+		*out = append(*out, fmt.Sprintf("%s=%s", prefix, t))
+	case float64, bool:
+		val := fmt.Sprintf("%v", t)
+		if prefix == "" {
+			*out = append(*out, val)
+			return
+		}
+		*out = append(*out, fmt.Sprintf("%s=%s", prefix, val))
+	default:
+		if t == nil {
+			return
+		}
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		if prefix == "" {
+			*out = append(*out, string(b))
+			return
+		}
+		*out = append(*out, fmt.Sprintf("%s=%s", prefix, string(b)))
+	}
+}
+
+func ftsArguments(raw string, flat string) string {
+	if flat != "" {
+		return flat
+	}
+	return raw
 }

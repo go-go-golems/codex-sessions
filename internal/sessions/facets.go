@@ -18,12 +18,14 @@ type ToolCall struct {
 	Timestamp time.Time
 	Name      string
 	Arguments string // JSON-ish string
+	CallID    string
 }
 
 type ToolOutput struct {
 	Timestamp time.Time
 	Name      string
 	Output    string // JSON-ish string
+	CallID    string
 }
 
 type PathMention struct {
@@ -194,6 +196,7 @@ func extractToolFromResponseItemPayload(
 			return false
 		}
 		// Codex sessions typically store args as a string under "input".
+		callID, _ := maybeString(payload["call_id"])
 		if input, ok := payload["input"]; ok {
 			inStr := marshalCompact(input)
 			if inStr == "" {
@@ -202,17 +205,18 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if inStr != "" {
-				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(inStr, maxValueChars)})
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(inStr, maxValueChars), CallID: callID})
 			}
 		}
-		if callID, ok := maybeString(payload["call_id"]); ok {
+		if callID != "" {
 			callIDToName[callID] = name
 		}
 		return true
 	case "custom_tool_call_output":
 		// Outputs are linked to calls via call_id; the payload doesn't always include the tool name.
 		name := ""
-		if callID, ok := maybeString(payload["call_id"]); ok {
+		callID, _ := maybeString(payload["call_id"])
+		if callID != "" {
 			name = callIDToName[callID]
 		}
 		if name == "" {
@@ -226,7 +230,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if outStr != "" {
-				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars)})
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars), CallID: callID})
 			}
 		}
 		return true
@@ -238,6 +242,7 @@ func extractToolFromResponseItemPayload(
 		if name == "" {
 			return false
 		}
+		callID, _ := maybeString(payload["call_id"])
 		if args, ok := payload["arguments"]; ok {
 			argsStr := marshalCompact(args)
 			if argsStr == "" {
@@ -246,10 +251,10 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if argsStr != "" {
-				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, maxValueChars)})
+				*outCalls = append(*outCalls, ToolCall{Timestamp: ts, Name: name, Arguments: truncateValue(argsStr, maxValueChars), CallID: callID})
 			}
 		}
-		if callID, ok := maybeString(payload["call_id"]); ok {
+		if callID != "" {
 			callIDToName[callID] = name
 		}
 		return true
@@ -266,6 +271,7 @@ func extractToolFromResponseItemPayload(
 		if name == "" {
 			name = "unknown"
 		}
+		callID, _ := maybeString(payload["call_id"])
 		if out, ok := payload["output"]; ok {
 			outStr := marshalCompact(out)
 			if outStr == "" {
@@ -274,7 +280,7 @@ func extractToolFromResponseItemPayload(
 				}
 			}
 			if outStr != "" {
-				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars)})
+				*outOutputs = append(*outOutputs, ToolOutput{Timestamp: ts, Name: name, Output: truncateValue(outStr, maxValueChars), CallID: callID})
 			}
 		}
 		return true
