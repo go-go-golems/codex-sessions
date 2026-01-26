@@ -2,7 +2,7 @@ package indexdb
 
 import "database/sql"
 
-const schemaVersion = 1
+const schemaVersion = 2
 
 func EnsureSchema(db *sql.DB) error {
 	// user_version is a simple integer we can bump if we introduce breaking schema changes.
@@ -102,7 +102,6 @@ func EnsureSchema(db *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_errors_session_id ON errors(session_id);`,
 
-		`PRAGMA user_version = 1;`,
 	}
 
 	for _, stmt := range stmts {
@@ -110,5 +109,89 @@ func EnsureSchema(db *sql.DB) error {
 			return err
 		}
 	}
+
+	if userVersion < 2 {
+		if err := migrateToV2(db); err != nil {
+			return err
+		}
+		if _, err := db.Exec("PRAGMA user_version = 2;"); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func migrateToV2(db *sql.DB) error {
+	columns, err := existingColumns(db, "sessions")
+	if err != nil {
+		return err
+	}
+
+	adds := []struct {
+		name string
+		spec string
+	}{
+		{name: "meta_json", spec: "TEXT"},
+		{name: "cwd", spec: "TEXT"},
+		{name: "host", spec: "TEXT"},
+		{name: "model", spec: "TEXT"},
+		{name: "client", spec: "TEXT"},
+		{name: "session_version", spec: "TEXT"},
+		{name: "source_mtime", spec: "INTEGER"},
+		{name: "source_size", spec: "INTEGER"},
+		{name: "source_hash", spec: "TEXT"},
+		{name: "is_reflection_copy", spec: "INTEGER DEFAULT 0"},
+	}
+
+	for _, add := range adds {
+		if columns[add.name] {
+			continue
+		}
+		if _, err := db.Exec("ALTER TABLE sessions ADD COLUMN " + add.name + " " + add.spec + ";"); err != nil {
+			return err
+		}
+	}
+
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS session_meta_kv (
+		session_id TEXT NOT NULL,
+		key        TEXT NOT NULL,
+		value      TEXT NOT NULL,
+		value_type TEXT,
+		PRIMARY KEY (session_id, key)
+	);`); err != nil {
+		return err
+	}
+	if _, err := db.Exec(`CREATE INDEX IF NOT EXISTS idx_session_meta_kv_key_value ON session_meta_kv(key, value);`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func existingColumns(db *sql.DB, table string) (map[string]bool, error) {
+	rows, err := db.Query("PRAGMA table_info(" + table + ");")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	columns := map[string]bool{}
+	for rows.Next() {
+		var (
+			cid        int
+			name       string
+			colType    string
+			notNull    int
+			defaultVal any
+			pk         int
+		)
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &defaultVal, &pk); err != nil {
+			return nil, err
+		}
+		columns[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return columns, nil
 }
