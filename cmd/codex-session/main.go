@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-go-golems/codex-session/internal/doc"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/help"
+	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +17,12 @@ func main() {
 		Use:   "codex-session",
 		Short: "Query and reflect on Codex session histories",
 	}
+
+	helpSystem := help.NewHelpSystem()
+	if err := doc.AddDocToHelpSystem(helpSystem); err != nil {
+		cobra.CheckErr(err)
+	}
+	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 	projectsCmd, err := NewProjectsCommand()
 	if err != nil {
