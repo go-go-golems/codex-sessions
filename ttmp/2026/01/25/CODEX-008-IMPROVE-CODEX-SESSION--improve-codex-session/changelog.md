@@ -74,3 +74,13 @@ Step 9: backfill list when index is sparse (commit b186982)
 
 - /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/list.go — Backfill list when rows < limit
 
+
+## 2026-01-26
+
+Step 10: allow tool-only search (commit 3e12f53)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/cmd/codex-session/search.go — Relax validation for tool-only
+- /home/manuel/workspaces/2026-01-25/improve-codex-session/codex-sessions/internal/indexdb/search.go — Tool-only query path
+

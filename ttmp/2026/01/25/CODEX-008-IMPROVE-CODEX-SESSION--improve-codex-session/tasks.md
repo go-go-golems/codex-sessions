@@ -11,3 +11,5 @@
 - [x] Add tool call arg parsing + columns for structured querying
 - [x] Add search flags for tool + args (ParameterTypeKeyValue) and wire into indexdb.Search
 - [x] Backfill list when index incomplete + verify reindex behavior
+- [x] Allow tool-only search (no query/arg)
+- [ ] Initialize TUI help system and update glazed tutorial

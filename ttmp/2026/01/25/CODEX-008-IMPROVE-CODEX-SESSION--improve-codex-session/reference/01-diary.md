@@ -594,3 +594,62 @@ I adjusted the list command to backfill the index when the SQLite database has f
 
 - Commands run:
   - `ttmp/2026/01/25/CODEX-008-IMPROVE-CODEX-SESSION--improve-codex-session/scripts/02-verify-list-reindex.sh`
+
+## Step 10: Allow tool-only search (no query/arg)
+
+I updated the indexed search flow to allow `--tool` without a text query or argument filters. In that case, the search bypasses FTS and returns tool calls (and outputs for `--scope all`) filtered by tool name and date/project constraints.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Allow the tool search to have no arg / no query, and just look for calls to that tool. Also make sure you intiialzize the TUI helpsystem for glazed like in glazed/cmd/glaze/main.go , and if it was unclear, to specify how to do that in glazed/pkg/doc/tutorials/05-build-first-command.md"
+
+**Assistant interpretation:** Let tool-only searches work without query/arg and then wire up the help system in the CLI and docs.
+
+**Inferred user intent:** Make tool-call filtering intuitive (tool name only) without requiring a query string.
+
+**Commit (code):** 3e12f53 — "search: allow tool-only queries"
+
+### What I did
+
+- Added non-FTS query paths that fetch tool calls/outputs by tool name only.
+- Relaxed CLI validation so `--tool` alone is sufficient (scope must be tools/all).
+- Verified the command against real data.
+
+### Why
+
+- Tool-only searches are a common use case and shouldn’t require dummy queries.
+
+### What worked
+
+- `codex-session search --scope tools --tool docmgr --max-results 5` runs without errors.
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- FTS requires a non-empty MATCH; a direct SQL fallback is necessary for tool-only queries.
+
+### What was tricky to build
+
+- Keeping FTS-based behavior when a query/arg is present while cleanly bypassing it otherwise.
+
+### What warrants a second pair of eyes
+
+- Whether tool-only queries should return tool outputs by default when `--scope tools` (currently only tool calls).
+
+### What should be done in the future
+
+- N/A
+
+### Code review instructions
+
+- Review `codex-sessions/internal/indexdb/search.go` for the tool-only query path.
+- Review `codex-sessions/cmd/codex-session/search.go` for CLI validation changes.
+- Validate with `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --max-results 5`.
+
+### Technical details
+
+- Commands run:
+  - `go run ./cmd/codex-session search --sessions-root /home/manuel/.codex/sessions --scope tools --tool docmgr --max-results 5`
