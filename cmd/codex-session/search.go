@@ -24,6 +24,7 @@ type SearchSettings struct {
 	SessionsRoot      string `glazed.parameter:"sessions-root"`
 	IndexPath         string `glazed.parameter:"index-path"`
 	UseIndex          bool   `glazed.parameter:"use-index"`
+	NoReindex         bool   `glazed.parameter:"no-reindex"`
 	Scope             string `glazed.parameter:"scope"`
 	Query             string `glazed.parameter:"query"`
 	Project           string `glazed.parameter:"project"`
@@ -71,6 +72,12 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeBool,
 				fields.WithDefault(true),
 				fields.WithHelp("Use SQLite/FTS index when present (falls back to streaming scan if missing)"),
+			),
+			fields.New(
+				"no-reindex",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Disable automatic reindexing when sessions appear stale"),
 			),
 			fields.New(
 				"scope",
@@ -218,6 +225,27 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 			defer func() { _ = db.Close() }()
 			if err := indexdb.EnsureSchema(db); err != nil {
 				return err
+			}
+
+			if !settings.NoReindex {
+				rows, err := indexdb.ListSessions(ctx, db, indexdb.ListFilters{
+					Project:                 settings.Project,
+					Since:                   since,
+					Until:                   until,
+					IncludeReflectionCopies: settings.IncludeCopies,
+				})
+				if err != nil {
+					return err
+				}
+				stale := indexdb.FindStaleRows(rows)
+				if len(stale) > 0 {
+					buildOpts := indexdb.DefaultBuildOptions()
+					buildOpts.Force = true
+					for _, row := range stale {
+						meta := indexdb.RowToMeta(row)
+						_ = indexdb.BuildSessionIndex(ctx, db, meta, buildOpts)
+					}
+				}
 			}
 
 			scope := indexdb.ScopeMessages

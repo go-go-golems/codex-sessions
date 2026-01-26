@@ -18,6 +18,16 @@ type BuildOptions struct {
 	IncludeToolOutputs bool
 }
 
+const DefaultMaxChars = 20000
+
+func DefaultBuildOptions() BuildOptions {
+	return BuildOptions{
+		MaxChars:           DefaultMaxChars,
+		IncludeToolCalls:   true,
+		IncludeToolOutputs: false,
+	}
+}
+
 type SessionBuildStatus string
 
 const (
