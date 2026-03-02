@@ -38,7 +38,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T15:42:00-05:00
+LastUpdated: 2026-03-02T15:48:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -905,3 +905,84 @@ ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-m
   - `messages/codex`: indexed `8`, fallback `8`
   - `tools/functions.shell_command`: indexed `0`, fallback `0`
   - `all//home/manuel`: indexed `8`, fallback `8`
+
+## Step 11: Refactor main.go wiring with shared helpers (task 8)
+
+I then executed the maintainability cleanup for `main.go` by replacing repeated command construction blocks with shared helper functions and a testable root builder function. This cuts duplication materially and sets up task 9 (wiring tests) cleanly.
+
+The behavior remains equivalent, but the wiring code is now easier to review and harder to drift.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue remaining tasks sequentially, including structural cleanup items from the original main.go investigation.
+
+**Inferred user intent:** Close old follow-up tasks, not only search-specific ones.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Refactored `cmd/codex-session/main.go`:
+  - added `defaultParserConfig()`
+  - added generic `buildGlazedCommand(...)`
+  - added generic `addGlazedCommand(...)`
+  - introduced `buildRootCommand() (*cobra.Command, error)`
+  - kept `main()` minimal and error-focused
+- Ran validation:
+
+```bash
+gofmt -w cmd/codex-session/main.go
+go test ./cmd/codex-session
+```
+
+- Checked off task 8:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 8
+```
+
+### Why
+
+- Remove copy/pasted wiring ceremony and centralize parser config.
+
+### What worked
+
+- Build/test passed after refactor.
+- Command registration remains intact while code became significantly shorter and clearer.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- Generic helper signatures (`func() (T, error)` with `T cmds.Command`) are a clean way to pass concrete `New*Command` constructors without wrappers.
+
+### What was tricky to build
+
+- Preserving precise error context while moving to shared helpers.
+- I preserved per-command labels in helper errors (`error creating <label> command`).
+
+### What warrants a second pair of eyes
+
+- Ensure no command was accidentally dropped in the refactor (covered next by task 9 tests).
+
+### What should be done in the future
+
+- Keep all future command additions routed through `addGlazedCommand(...)` so parser config stays centralized.
+
+### Code review instructions
+
+- Review `cmd/codex-session/main.go` old-vs-new wiring shape.
+- Run:
+
+```bash
+go test ./cmd/codex-session
+go run ./cmd/codex-session --help
+```
+
+### Technical details
+
+- `buildRootCommand()` now provides a pure construction seam for command-tree tests.

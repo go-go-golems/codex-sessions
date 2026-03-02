@@ -12,7 +12,7 @@
 ## Follow-up
 
 - [ ] Decide whether to align `go.work` Go version or standardize `GOWORK=off` for this workspace.
-- [ ] Refactor `main.go` with a shared command-registration helper to remove repetition.
+- [x] Refactor `main.go` with a shared command-registration helper to remove repetition.
 - [ ] Add command-tree wiring tests (e.g., `main_wiring_test.go`).
 - [ ] Decide and document whether root-level glazed flags should be supported.
 - [x] Validate --case-sensitive parity between indexed and fallback search paths (including tools scope behavior).

@@ -103,3 +103,12 @@ Ran real-corpus indexed-vs-fallback validation on a bounded project slice and su
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/02-codex-sessions-comprehensive-reliability-assessment.md — Added real-corpus result summary section
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh — Comparator now supports skip-build and forces indexed mode with stale-index-policy=ignore for fair diffing
 
+
+## 2026-03-02
+
+Refactored main.go command registration into shared glazed command builder helpers and buildRootCommand().
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main.go — Replaced repetitive command wiring with helper-based construction
+
