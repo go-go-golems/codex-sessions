@@ -112,3 +112,12 @@ Refactored main.go command registration into shared glazed command builder helpe
 
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main.go — Replaced repetitive command wiring with helper-based construction
 
+
+## 2026-03-02
+
+Added command-tree wiring tests for top-level and grouped subcommands via buildRootCommand().
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main_wiring_test.go — Asserts command registration coverage for index/cleanup/traces groups
+

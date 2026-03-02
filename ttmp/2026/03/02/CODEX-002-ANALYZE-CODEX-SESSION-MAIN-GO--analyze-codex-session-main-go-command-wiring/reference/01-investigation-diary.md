@@ -12,6 +12,8 @@ Owners: []
 RelatedFiles:
     - Path: codex-sessions/cmd/codex-session/main.go
       Note: Line-level investigation target
+    - Path: codex-sessions/cmd/codex-session/main_wiring_test.go
+      Note: Command-tree wiring regression tests
     - Path: codex-sessions/cmd/codex-session/search.go
       Note: Representative subcommand behavior check
     - Path: codex-sessions/internal/indexdb/indexdb_test.go
@@ -38,7 +40,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T15:48:00-05:00
+LastUpdated: 2026-03-02T15:52:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -986,3 +988,82 @@ go run ./cmd/codex-session --help
 ### Technical details
 
 - `buildRootCommand()` now provides a pure construction seam for command-tree tests.
+
+## Step 12: Add command-tree wiring tests (task 9)
+
+With `buildRootCommand()` in place, I added the dedicated wiring test requested in the original follow-up tasks. The test asserts top-level command presence plus group-subcommand coverage (`index`, `cleanup`, `traces`), which directly guards against accidental registration regressions.
+
+This converts previous manual wiring verification into repeatable unit coverage.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue task-by-task closure, including legacy main.go follow-up tasks.
+
+**Inferred user intent:** Ensure structural reliability tasks are actually implemented, not left as recommendations.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Added:
+  - `cmd/codex-session/main_wiring_test.go`
+- Test coverage includes:
+  - top-level commands: `projects,list,show,search,export,reflect,index,cleanup,traces`
+  - grouped children:
+    - `index`: `build,stats`
+    - `cleanup`: `reflection-copies`
+    - `traces`: `md`
+- Validation:
+
+```bash
+go test ./cmd/codex-session
+```
+
+- Checked off task 9:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 9
+```
+
+### Why
+
+- Lock command wiring contract into tests so future refactors fail fast.
+
+### What worked
+
+- New wiring test passed and integrates cleanly with existing command package tests.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- `buildRootCommand()` significantly lowers friction for CLI tree validation.
+
+### What was tricky to build
+
+- Avoiding test brittleness around cobra internals; I kept assertions at command-name level rather than usage strings.
+
+### What warrants a second pair of eyes
+
+- Whether we also want assertions about command aliases and help text contract.
+
+### What should be done in the future
+
+- Add one smoke test for root `--help` output content if help wording stability matters.
+
+### Code review instructions
+
+- Review `cmd/codex-session/main_wiring_test.go`.
+- Re-run:
+
+```bash
+go test ./cmd/codex-session -run TestBuildRootCommandWiring -v
+```
+
+### Technical details
+
+- Test helper functions `childNames(...)` and `requireCommand(...)` keep assertions concise and readable.
