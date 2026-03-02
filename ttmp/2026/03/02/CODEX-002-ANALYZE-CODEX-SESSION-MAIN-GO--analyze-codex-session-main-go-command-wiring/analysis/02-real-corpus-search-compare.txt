@@ -1,0 +1,276 @@
+# Real Corpus Search Comparison Results
+
+project: 2026-02-12--hypercard-react
+sessions_root: /home/manuel/.codex/sessions
+
+## Run 1: messages query=codex since=2026-02-01 (build+compare)
+query: codex
+scope: messages
+indexed_count: 8
+fallback_count: 8
+
+indexed_only_session_ids:
+
+fallback_only_session_ids:
+
+sample_indexed_results:
+[
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-21T18:21:51Z",
+    "conversation_title": "We are merging with origin/main but a lot has changed since we added the new ma…",
+    "conversation_updated_at": "2026-02-21T19:18:40Z",
+    "match_count": 3,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "messages",
+    "score_min": -4.472533050036771,
+    "session_id": "019c816f-c4be-7372-a31c-565513201a9c",
+    "snippet": " … alert-msg\">\\n@chatgpt-codex-connector\\nchatgpt-codex-connector bot\\n2 … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/21/rollout-2026-02-21T13-21-51-019c816f-c4be-7372-a31c-565513201a9c.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-20T13:23:03Z",
+    "conversation_title": "Work on docmgr ticket HC-01-EXTRACT-WEBCHAT and tackle task by task, keeping a …",
+    "conversation_updated_at": "2026-02-21T17:34:47Z",
+    "match_count": 9,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "messages",
+    "score_min": -4.45892625168376,
+    "session_id": "019c7b37-d986-7462-9ea8-a2f433f2a54b",
+    "snippet": " … setSendError(null);\\n@chatgpt-codex-connector\\nchatgpt-codex-connector bot\\n16 … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/20/rollout-2026-02-20T08-23-03-019c7b37-d986-7462-9ea8-a2f433f2a54b.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-12T16:54:45Z",
+    "conversation_title": "Work on docmgr ticket HC-001-IMPORT-JSX and do an in depth review, like an OSHA…",
+    "conversation_updated_at": "2026-02-12T23:04:55Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "messages",
+    "score_min": -4.099416366084186,
+    "session_id": "019c52c6-c8e7-7280-8410-82a71dda3ddc",
+    "snippet": " … Install Codex skills into $CODEX_HOME/skills from a curated … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/12/rollout-2026-02-12T11-54-45-019c52c6-c8e7-7280-8410-82a71dda3ddc.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-13T14:36:06Z",
+    "conversation_title": "creat ea new docmgr ticket HC-017-NEW-DSL that is about replacing our current p…",
+    "conversation_updated_at": "2026-02-13T17:08:08Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "messages",
+    "score_min": -4.099416366084186,
+    "session_id": "019c576e-36b7-7a93-87b5-27fdcefc914e",
+    "snippet": " … Install Codex skills into $CODEX_HOME/skills from a curated … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/13/rollout-2026-02-13T09-36-06-019c576e-36b7-7a93-87b5-27fdcefc914e.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-13T20:40:14Z",
+    "conversation_title": "Let's create a ticket HC-022-CODE-REVIEW, and do an indepth review of the setup…",
+    "conversation_updated_at": "2026-02-13T21:11:31Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "messages",
+    "score_min": -4.099416366084186,
+    "session_id": "019c58bb-9623-7630-a28b-9986b75695bc",
+    "snippet": " … Install Codex skills into $CODEX_HOME/skills from a curated … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/13/rollout-2026-02-13T15-40-14-019c58bb-9623-7630-a28b-9986b75695bc.jsonl"
+  }
+]
+
+sample_fallback_results:
+[
+  {
+    "conversation_started_at": "2026-02-12T16:54:45Z",
+    "conversation_title": "Work on docmgr ticket HC-001-IMPORT-JSX and do an in depth review, like an OSHA…",
+    "conversation_updated_at": "2026-02-12T23:04:55Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c52c6-c8e7-7280-8410-82a71dda3ddc",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-13T14:36:06Z",
+    "conversation_title": "creat ea new docmgr ticket HC-017-NEW-DSL that is about replacing our current p…",
+    "conversation_updated_at": "2026-02-13T17:08:08Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c576e-36b7-7a93-87b5-27fdcefc914e",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-13T20:40:14Z",
+    "conversation_title": "Let's create a ticket HC-022-CODE-REVIEW, and do an indepth review of the setup…",
+    "conversation_updated_at": "2026-02-13T21:11:31Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c58bb-9623-7630-a28b-9986b75695bc",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-15T14:03:39Z",
+    "conversation_title": "Create a new docmgr ticket HC-029-WINDOWING-SUPPORT and use docmgr import file …",
+    "conversation_updated_at": "2026-02-15T14:29:17Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c619d-3774-76e0-baa1-f5259274057f",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-15T14:37:05Z",
+    "conversation_title": "Start working on docmgr HC-029-WINDOWING-SUPPORT and keep a frequent diary. Com…",
+    "conversation_updated_at": "2026-02-15T14:59:22Z",
+    "match_count": 1,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c61bb-d4f6-7761-8194-57b5a381ed0e",
+    "snippet": "# AGENTS.md instructions for /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that i…"
+  }
+]
+
+## Run 2: tools query=functions.shell_command since=2026-02-01 (skip-build compare)
+query: functions.shell_command
+scope: tools
+indexed_count: 0
+fallback_count: 0
+
+indexed_only_session_ids:
+
+fallback_only_session_ids:
+
+sample_indexed_results:
+[]
+
+sample_fallback_results:
+[]
+
+## Run 3: all query=/home/manuel since=2026-02-01 (skip-build compare)
+query: /home/manuel
+scope: all
+indexed_count: 8
+fallback_count: 8
+
+indexed_only_session_ids:
+
+fallback_only_session_ids:
+
+sample_indexed_results:
+[
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-13T14:36:06Z",
+    "conversation_title": "creat ea new docmgr ticket HC-017-NEW-DSL that is about replacing our current p…",
+    "conversation_updated_at": "2026-02-13T17:08:08Z",
+    "match_count": 5,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "all",
+    "score_min": -3.697220668229073,
+    "session_id": "019c576e-36b7-7a93-87b5-27fdcefc914e",
+    "snippet": " … DetailView/<.children<.children<@http://localhost:6006/@fs/home/manuel/code … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/13/rollout-2026-02-13T09-36-06-019c576e-36b7-7a93-87b5-27fdcefc914e.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-12T16:54:45Z",
+    "conversation_title": "Work on docmgr ticket HC-001-IMPORT-JSX and do an in depth review, like an OSHA…",
+    "conversation_updated_at": "2026-02-12T23:04:55Z",
+    "match_count": 5,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "all",
+    "score_min": -3.547499367932951,
+    "session_id": "019c52c6-c8e7-7280-8410-82a71dda3ddc",
+    "snippet": "<environment_context>\\n  <cwd>/home/manuel/code/wesen/2026-02-12 … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/12/rollout-2026-02-12T11-54-45-019c52c6-c8e7-7280-8410-82a71dda3ddc.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-13T20:40:14Z",
+    "conversation_title": "Let's create a ticket HC-022-CODE-REVIEW, and do an indepth review of the setup…",
+    "conversation_updated_at": "2026-02-13T21:11:31Z",
+    "match_count": 2,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "all",
+    "score_min": -3.547499367932951,
+    "session_id": "019c58bb-9623-7630-a28b-9986b75695bc",
+    "snippet": "<environment_context>\\n  <cwd>/home/manuel/code/wesen/2026-02-12 … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/13/rollout-2026-02-13T15-40-14-019c58bb-9623-7630-a28b-9986b75695bc.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-15T14:03:39Z",
+    "conversation_title": "Create a new docmgr ticket HC-029-WINDOWING-SUPPORT and use docmgr import file …",
+    "conversation_updated_at": "2026-02-15T14:29:17Z",
+    "match_count": 3,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "all",
+    "score_min": -3.547499367932951,
+    "session_id": "019c619d-3774-76e0-baa1-f5259274057f",
+    "snippet": "<environment_context>\\n  <cwd>/home/manuel/code/wesen/2026-02-12 … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/15/rollout-2026-02-15T09-03-39-019c619d-3774-76e0-baa1-f5259274057f.jsonl"
+  },
+  {
+    "backend": "index",
+    "conversation_started_at": "2026-02-15T14:37:05Z",
+    "conversation_title": "Start working on docmgr HC-029-WINDOWING-SUPPORT and keep a frequent diary. Com…",
+    "conversation_updated_at": "2026-02-15T14:59:22Z",
+    "match_count": 5,
+    "project": "2026-02-12--hypercard-react",
+    "scope": "all",
+    "score_min": -3.518356034547507,
+    "session_id": "019c61bb-d4f6-7761-8194-57b5a381ed0e",
+    "snippet": " … Cannot find package '@storybook/react-vite'\\n│  imported from\\n│  /home/manuel … ",
+    "source_path": "/home/manuel/.codex/sessions/2026/02/15/rollout-2026-02-15T09-37-05-019c61bb-d4f6-7761-8194-57b5a381ed0e.jsonl"
+  }
+]
+
+sample_fallback_results:
+[
+  {
+    "conversation_started_at": "2026-02-12T16:54:45Z",
+    "conversation_title": "Work on docmgr ticket HC-001-IMPORT-JSX and do an in depth review, like an OSHA…",
+    "conversation_updated_at": "2026-02-12T23:04:55Z",
+    "match_count": 2,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c52c6-c8e7-7280-8410-82a71dda3ddc",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-13T14:36:06Z",
+    "conversation_title": "creat ea new docmgr ticket HC-017-NEW-DSL that is about replacing our current p…",
+    "conversation_updated_at": "2026-02-13T17:08:08Z",
+    "match_count": 4,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c576e-36b7-7a93-87b5-27fdcefc914e",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-13T20:40:14Z",
+    "conversation_title": "Let's create a ticket HC-022-CODE-REVIEW, and do an indepth review of the setup…",
+    "conversation_updated_at": "2026-02-13T21:11:31Z",
+    "match_count": 2,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c58bb-9623-7630-a28b-9986b75695bc",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-15T14:03:39Z",
+    "conversation_title": "Create a new docmgr ticket HC-029-WINDOWING-SUPPORT and use docmgr import file …",
+    "conversation_updated_at": "2026-02-15T14:29:17Z",
+    "match_count": 2,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c619d-3774-76e0-baa1-f5259274057f",
+    "snippet": "# AGENTS.md instructions for /home/manuel/code/wesen/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Be…"
+  },
+  {
+    "conversation_started_at": "2026-02-15T14:37:05Z",
+    "conversation_title": "Start working on docmgr HC-029-WINDOWING-SUPPORT and keep a frequent diary. Com…",
+    "conversation_updated_at": "2026-02-15T14:59:22Z",
+    "match_count": 4,
+    "project": "2026-02-12--hypercard-react",
+    "session_id": "019c61bb-d4f6-7761-8194-57b5a381ed0e",
+    "snippet": "# AGENTS.md instructions for /home/manuel/workspaces/2026-02-14/hypercard-add-webchat/2026-02-12--hypercard-react\\n\\n<INSTRUCTIONS>\\n## Skills\\nA skill is a set of local instructions to follow that i…"
+  }
+]

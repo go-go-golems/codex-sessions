@@ -24,6 +24,8 @@ RelatedFiles:
       Note: Synthetic parity and stale-index behavior probe
     - Path: codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh
       Note: Real-corpus indexed-vs-fallback comparison helper
+    - Path: codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/analysis/02-real-corpus-search-compare.txt
+      Note: Stored output from real-corpus comparison runs
     - Path: go.work
       Note: Recorded startup failure context
     - Path: internal/indexdb/indexdb_test.go
@@ -36,7 +38,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T14:38:00-05:00
+LastUpdated: 2026-03-02T15:42:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -807,3 +809,99 @@ go test ./internal/indexdb -run TestSearchRawFTSQueryOptIn -v
 ### Technical details
 
 - In raw mode, query text is passed to FTS `MATCH` unchanged; otherwise it is literalized and escaped.
+
+## Step 10: Run real-corpus indexed-vs-fallback comparisons and summarize diffs
+
+I completed the real-corpus validation task using a bounded project slice to keep runs practical while still representative. I also improved the comparison script so it can skip repeated index builds and force true indexed-mode comparison even when stale-index policy would otherwise auto-fallback.
+
+Results were stable for session-id parity in the sampled project/filter set: indexed and fallback returned the same matching session sets, with differences primarily in ranking/snippet presentation.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue sequential execution and complete remaining reliability tasks with auditable artifacts.
+
+**Inferred user intent:** Verify that proposed fixes actually hold on real data, not only synthetic fixtures.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Updated comparator script:
+  - `scripts/search-real-corpus-compare.sh`
+  - added `--skip-index-build`
+  - forced indexed run with `--stale-index-policy=ignore` for fair comparisons
+  - constrained index-build flags to provided filters when building
+- Ran comparisons on:
+  - `sessions-root`: `~/.codex/sessions`
+  - `project`: `2026-02-12--hypercard-react`
+  - `since`: `2026-02-01`
+  - queries/scopes:
+    - `codex` / `messages`
+    - `functions.shell_command` / `tools`
+    - `/home/manuel` / `all`
+- Stored outputs:
+  - `analysis/02-real-corpus-search-compare.txt`
+- Summarized results in design doc section `10.3`.
+- Checked off task 15:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 15
+```
+
+### Why
+
+- Validate parity/diff behavior on real session corpus before declaring search behavior “good”.
+
+### What worked
+
+- Real-corpus runs completed and produced reproducible artifacts.
+- For the bounded slice, indexed/fallback session-id sets matched in all three runs.
+
+### What didn't work
+
+- Initial full-root comparison approach was too slow because index rebuild happened for every run.
+- I adjusted workflow to “build once + skip-build compares” and added script support accordingly.
+
+### What I learned
+
+- On real data, practical differences were mostly ranking/snippet formatting rather than session-set membership for tested filters.
+
+### What was tricky to build
+
+- Stale-index fallback policy can mask indexed-vs-fallback differences by forcing both sides to fallback.
+- I handled this by setting `--stale-index-policy=ignore` on the indexed side inside the comparator script.
+
+### What warrants a second pair of eyes
+
+- Whether comparator should support a stricter “fail on set-diff” mode for CI.
+
+### What should be done in the future
+
+- Add optional CI mode to comparator script with non-zero exit when indexed/fallback session-id sets diverge.
+
+### Code review instructions
+
+- Review:
+  - `scripts/search-real-corpus-compare.sh`
+  - `analysis/02-real-corpus-search-compare.txt`
+  - design doc section `10.3`
+- Re-run one sample:
+
+```bash
+ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh \
+  --sessions-root ~/.codex/sessions \
+  --project 2026-02-12--hypercard-react \
+  --query codex \
+  --scope messages \
+  --since 2026-02-01 \
+  --include-most-recent
+```
+
+### Technical details
+
+- Snapshot counts from stored run:
+  - `messages/codex`: indexed `8`, fallback `8`
+  - `tools/functions.shell_command`: indexed `0`, fallback `0`
+  - `all//home/manuel`: indexed `8`, fallback `8`

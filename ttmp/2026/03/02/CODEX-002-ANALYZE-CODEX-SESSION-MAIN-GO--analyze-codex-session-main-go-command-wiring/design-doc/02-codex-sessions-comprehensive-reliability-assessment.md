@@ -38,7 +38,7 @@ RelatedFiles:
       Note: Real-corpus indexed-vs-fallback comparator
 ExternalSources: []
 Summary: Full-system reliability assessment of codex-sessions with emphasis on search/index behavior, parity gaps, and maintainability risk.
-LastUpdated: 2026-03-02T14:10:00-05:00
+LastUpdated: 2026-03-02T15:40:00-05:00
 WhatFor: Orient new engineers and provide a concrete remediation/test plan for codex-sessions reliability.
 WhenToUse: Use before touching search/index behavior, adding new commands, or planning cleanup/refactors.
 ---
@@ -426,6 +426,30 @@ func CheckIndexFreshness(indexDB, sessionsRoot):
    - `scope=messages/tools/all`
 2. Staleness policy tests (warn/fallback/error behavior)
 3. `main_wiring_test.go` command-tree assertions
+
+### 10.3 Real-corpus comparison snapshot (task 15)
+
+I ran ticket script `scripts/search-real-corpus-compare.sh` against real sessions under `~/.codex/sessions` with bounded filters:
+
+- project: `2026-02-12--hypercard-react`
+- since: `2026-02-01`
+
+Summary results:
+
+1. `scope=messages`, `query=codex`
+   - indexed_count: `8`
+   - fallback_count: `8`
+   - session-id set diff: none
+2. `scope=tools`, `query=functions.shell_command`
+   - indexed_count: `0`
+   - fallback_count: `0`
+   - session-id set diff: none
+3. `scope=all`, `query=/home/manuel`
+   - indexed_count: `8`
+   - fallback_count: `8`
+   - session-id set diff: none
+
+Observed differences were in ranking/snippet rendering and match-count aggregation, not in which sessions matched for this filtered slice.
 
 ## 11. Intern runbook
 

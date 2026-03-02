@@ -19,5 +19,5 @@
 - [x] Audit flag parity: document and test differences for --include-most-recent, --include-reflection-copies, and --limit between indexed and fallback modes.
 - [x] Add scope correctness tests for --scope messages|tools|all including punctuation-heavy queries and tool outputs.
 - [x] Design and test index freshness detection so stale SQLite index usage is visible (warning/error/policy).
-- [ ] Run real-corpus validation comparing indexed search vs --use-index=false across project/since/until filters and summarize diffs.
+- [x] Run real-corpus validation comparing indexed search vs --use-index=false across project/since/until filters and summarize diffs.
 - [x] Document query semantics (literal phrase vs raw FTS) and decide whether to add a --raw-fts-query opt-in flag.

@@ -92,3 +92,14 @@ Documented and implemented query semantics decision: literal query default with 
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — Raw-FTS opt-in test coverage
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/search.go — RawQuery option bypasses literal quoting only when explicitly enabled
 
+
+## 2026-03-02
+
+Ran real-corpus indexed-vs-fallback validation on a bounded project slice and summarized parity/diff results in the assessment doc.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/analysis/02-real-corpus-search-compare.txt — Captured real-corpus run outputs
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/02-codex-sessions-comprehensive-reliability-assessment.md — Added real-corpus result summary section
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh — Comparator now supports skip-build and forces indexed mode with stale-index-policy=ignore for fair diffing
+
