@@ -36,7 +36,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T14:33:00-05:00
+LastUpdated: 2026-03-02T14:38:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -724,3 +724,86 @@ go test ./internal/indexdb -run TestSearchScopesWithPunctuationAndToolOutputs -v
 ### Technical details
 
 - The test confirms `ScopeTools` can match both tool-call argument text and tool-output text with punctuation-heavy queries.
+
+## Step 9: Finalize query semantics contract with raw FTS opt-in
+
+I completed the query-semantics decision task by implementing an explicit expert-mode flag instead of leaving behavior implicit. Literal phrase search remains the default for safety, while `--raw-fts-query` now enables advanced FTS expressions when needed.
+
+This preserves user safety for common queries (`CODEX-001`, paths, tool names) without blocking power-user syntax.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue task-by-task implementation and close open contract decisions with code + docs.
+
+**Inferred user intent:** Make behavior intentional and documented, not accidental.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Added command flag:
+  - `--raw-fts-query` (indexed mode opt-in)
+  - default remains literal query mode
+- Wired option through search stack:
+  - `cmd/codex-session/search.go`
+  - `internal/indexdb/search.go` (`SearchOptions.RawQuery`)
+- Added regression test:
+  - `internal/indexdb/indexdb_test.go`
+  - verifies `hello OR missing` matches only when `RawQuery=true`
+- Updated assessment document Finding 3 to reflect resolved decision.
+- Checked off task 16:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 16
+```
+
+### Why
+
+- Eliminate ambiguity around literal vs raw query behavior.
+
+### What worked
+
+- Tests passed with both command and indexdb packages:
+
+```bash
+go test ./internal/indexdb ./cmd/codex-session
+```
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- A dual-mode contract (safe default + explicit expert opt-in) gives cleaner UX than trying to auto-detect “intent” from query text.
+
+### What was tricky to build
+
+- Avoiding accidental reintroduction of parser errors while supporting true raw expressions.
+- Solved by keeping literal quoting as default and bypassing it only when opt-in flag is true.
+
+### What warrants a second pair of eyes
+
+- Whether raw mode should eventually include additional guardrails (for example, requiring indexed backend explicitly).
+
+### What should be done in the future
+
+- Add one CLI-level integration test for `--raw-fts-query` once search integration suite is added.
+
+### Code review instructions
+
+- Review:
+  - `cmd/codex-session/search.go` (`--raw-fts-query`)
+  - `internal/indexdb/search.go` (`RawQuery` handling)
+  - `internal/indexdb/indexdb_test.go` (opt-in behavior test)
+- Re-run:
+
+```bash
+go test ./internal/indexdb -run TestSearchRawFTSQueryOptIn -v
+```
+
+### Technical details
+
+- In raw mode, query text is passed to FTS `MATCH` unchanged; otherwise it is literalized and escaped.

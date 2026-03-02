@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ const (
 
 type SearchOptions struct {
 	Query      string
+	RawQuery   bool
 	MaxResults int
 	Scope      SearchScope
 
@@ -40,6 +42,15 @@ type SearchHit struct {
 	Tool      string
 	Snippet   string
 	Score     float64
+}
+
+func toLiteralFTSQuery(query string) string {
+	trimmed := strings.TrimSpace(query)
+	if trimmed == "" {
+		return `""`
+	}
+	escaped := strings.ReplaceAll(trimmed, `"`, `""`)
+	return `"` + escaped + `"`
 }
 
 func searchMessages(ctx context.Context, db *sql.DB, opts SearchOptions) ([]SearchHit, error) {
@@ -265,6 +276,13 @@ LIMIT ?;`,
 }
 
 func Search(ctx context.Context, db *sql.DB, opts SearchOptions) ([]SearchHit, error) {
+	// Command-level UX treats --query as plain user text, not raw FTS syntax.
+	// Convert to a quoted phrase so punctuation-heavy queries (IDs, paths, tool names)
+	// do not fail with FTS parser errors.
+	if !opts.RawQuery {
+		opts.Query = toLiteralFTSQuery(opts.Query)
+	}
+
 	var hits []SearchHit
 	switch opts.Scope {
 	case "":

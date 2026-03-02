@@ -81,3 +81,14 @@ Added scope correctness tests for messages/tools/all including punctuation-heavy
 
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — New scope-focused regression test for punctuation and tool outputs
 
+
+## 2026-03-02
+
+Documented and implemented query semantics decision: literal query default with --raw-fts-query opt-in for advanced FTS syntax.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search.go — Added --raw-fts-query flag and help text
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — Raw-FTS opt-in test coverage
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/search.go — RawQuery option bypasses literal quoting only when explicitly enabled
+

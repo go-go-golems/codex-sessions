@@ -27,6 +27,7 @@ type SearchSettings struct {
 	IndexPath         string `glazed:"index-path"`
 	UseIndex          bool   `glazed:"use-index"`
 	StaleIndexPolicy  string `glazed:"stale-index-policy"`
+	RawFTSQuery       bool   `glazed:"raw-fts-query"`
 	Scope             string `glazed:"scope"`
 	Query             string `glazed:"query"`
 	Project           string `glazed:"project"`
@@ -93,7 +94,13 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				"query",
 				fields.TypeString,
 				fields.WithDefault(""),
-				fields.WithHelp("Query substring to search for (required)"),
+				fields.WithHelp("Query text to search for (required; literal by default, unless --raw-fts-query)"),
+			),
+			fields.New(
+				"raw-fts-query",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Indexed mode only: treat --query as raw SQLite FTS syntax instead of literal text"),
 			),
 			fields.New(
 				"project",
@@ -329,6 +336,7 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 
 			hits, err := indexdb.Search(ctx, db, indexdb.SearchOptions{
 				Query:      settings.Query,
+				RawQuery:   settings.RawFTSQuery,
 				MaxResults: settings.MaxResults,
 				Scope:      scope,
 				Project:    settings.Project,

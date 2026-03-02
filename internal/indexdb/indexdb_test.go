@@ -265,3 +265,70 @@ func TestSearchScopesWithPunctuationAndToolOutputs(t *testing.T) {
 		t.Fatalf("expected hits for scope=all")
 	}
 }
+
+func TestSearchRawFTSQueryOptIn(t *testing.T) {
+	ctx := context.Background()
+	tmp := t.TempDir()
+	dir := filepath.Join(tmp, "2026", "01", "04")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	path := filepath.Join(dir, "rollout-2026-01-04T00-00-00-test.jsonl")
+	contents := "" +
+		`{"type":"session_meta","payload":{"id":"sid4","timestamp":"2026-01-04T00:00:00Z","cwd":"/tmp/proj"}}` + "\n" +
+		`{"type":"event_msg","timestamp":"2026-01-04T00:00:10Z","payload":{"type":"user_message","message":"hello world"}}` + "\n"
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	meta, err := sessions.ReadSessionMeta(path)
+	if err != nil {
+		t.Fatalf("ReadSessionMeta: %v", err)
+	}
+
+	db, err := Open(DefaultIndexPath(tmp))
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+	if err := EnsureSchema(db); err != nil {
+		t.Fatalf("EnsureSchema: %v", err)
+	}
+
+	r := BuildSessionIndex(ctx, db, meta, BuildOptions{
+		MaxChars:           20000,
+		IncludeToolCalls:   true,
+		IncludeToolOutputs: true,
+	})
+	if r.Status != SessionIndexed {
+		t.Fatalf("expected indexed, got %q (err=%q)", r.Status, r.Error)
+	}
+
+	// Raw FTS query uses OR operator and should match.
+	rawHits, err := Search(ctx, db, SearchOptions{
+		Query:      "hello OR missing",
+		RawQuery:   true,
+		Scope:      ScopeMessages,
+		MaxResults: 10,
+	})
+	if err != nil {
+		t.Fatalf("Search raw query: %v", err)
+	}
+	if len(rawHits) == 0 {
+		t.Fatalf("expected raw FTS query to match")
+	}
+
+	// Literal mode quotes the whole query phrase and should not match this dataset.
+	literalHits, err := Search(ctx, db, SearchOptions{
+		Query:      "hello OR missing",
+		RawQuery:   false,
+		Scope:      ScopeMessages,
+		MaxResults: 10,
+	})
+	if err != nil {
+		t.Fatalf("Search literal query: %v", err)
+	}
+	if len(literalHits) != 0 {
+		t.Fatalf("expected literal mode to not match raw operator query, got %#v", literalHits)
+	}
+}
