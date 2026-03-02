@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,22 +23,23 @@ import (
 )
 
 type SearchSettings struct {
-	SessionsRoot      string `glazed.parameter:"sessions-root"`
-	IndexPath         string `glazed.parameter:"index-path"`
-	UseIndex          bool   `glazed.parameter:"use-index"`
-	Scope             string `glazed.parameter:"scope"`
-	Query             string `glazed.parameter:"query"`
-	Project           string `glazed.parameter:"project"`
-	Since             string `glazed.parameter:"since"`
-	Until             string `glazed.parameter:"until"`
-	Limit             int    `glazed.parameter:"limit"`
-	MaxResults        int    `glazed.parameter:"max-results"`
-	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
-	IncludeCopies     bool   `glazed.parameter:"include-reflection-copies"`
-	CaseSensitive     bool   `glazed.parameter:"case-sensitive"`
-	PerMessage        bool   `glazed.parameter:"per-message"`
-	MaxSnippetChars   int    `glazed.parameter:"max-snippet-chars"`
-	SingleLine        bool   `glazed.parameter:"single-line"`
+	SessionsRoot      string `glazed:"sessions-root"`
+	IndexPath         string `glazed:"index-path"`
+	UseIndex          bool   `glazed:"use-index"`
+	StaleIndexPolicy  string `glazed:"stale-index-policy"`
+	Scope             string `glazed:"scope"`
+	Query             string `glazed:"query"`
+	Project           string `glazed:"project"`
+	Since             string `glazed:"since"`
+	Until             string `glazed:"until"`
+	Limit             int    `glazed:"limit"`
+	MaxResults        int    `glazed:"max-results"`
+	IncludeMostRecent bool   `glazed:"include-most-recent"`
+	IncludeCopies     bool   `glazed:"include-reflection-copies"`
+	CaseSensitive     bool   `glazed:"case-sensitive"`
+	PerMessage        bool   `glazed:"per-message"`
+	MaxSnippetChars   int    `glazed:"max-snippet-chars"`
+	SingleLine        bool   `glazed:"single-line"`
 }
 
 type SearchCommand struct {
@@ -71,6 +74,13 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeBool,
 				fields.WithDefault(true),
 				fields.WithHelp("Use SQLite/FTS index when present (falls back to streaming scan if missing)"),
+			),
+			fields.New(
+				"stale-index-policy",
+				fields.TypeChoice,
+				fields.WithDefault("fallback"),
+				fields.WithChoices("ignore", "warn", "fallback", "error"),
+				fields.WithHelp("When index appears stale: ignore, warn, fallback to scan, or error"),
 			),
 			fields.New(
 				"scope",
@@ -158,13 +168,77 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 
 var _ cmds.GlazeCommand = &SearchCommand{}
 
+func discoverFilteredMetas(settings *SearchSettings, since, until *time.Time) ([]sessions.SessionMeta, error) {
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	metas := make([]sessions.SessionMeta, 0, len(paths))
+	for _, p := range paths {
+		meta, err := sessions.ReadSessionMeta(p)
+		if err != nil {
+			continue
+		}
+		if settings.Project != "" && meta.ProjectName() != settings.Project {
+			continue
+		}
+		if since != nil && meta.Timestamp.Before(*since) {
+			continue
+		}
+		if until != nil && meta.Timestamp.After(*until) {
+			continue
+		}
+		metas = append(metas, meta)
+	}
+	return metas, nil
+}
+
+func detectStaleIndex(
+	ctx context.Context,
+	db *sql.DB,
+	indexPath string,
+	metas []sessions.SessionMeta,
+) (bool, string, error) {
+	indexInfo, err := os.Stat(indexPath)
+	if err != nil {
+		return false, "", err
+	}
+	indexModTime := indexInfo.ModTime()
+
+	for _, meta := range metas {
+		var exists int
+		err := db.QueryRowContext(ctx, "SELECT 1 FROM sessions WHERE session_id = ? LIMIT 1", meta.ID).Scan(&exists)
+		if err == sql.ErrNoRows {
+			return true, fmt.Sprintf("session %s is missing from index", meta.ID), nil
+		}
+		if err != nil {
+			return false, "", err
+		}
+
+		fileInfo, err := os.Stat(meta.Path)
+		if err != nil {
+			return true, fmt.Sprintf("failed to stat session file %s", filepath.Clean(meta.Path)), nil
+		}
+		if fileInfo.ModTime().After(indexModTime) {
+			return true, fmt.Sprintf("session %s changed after index build", meta.ID), nil
+		}
+	}
+
+	return false, "", nil
+}
+
 func (c *SearchCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
 	vals *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &SearchSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 	if strings.TrimSpace(settings.Query) == "" {
@@ -218,6 +292,31 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 			defer func() { _ = db.Close() }()
 			if err := indexdb.EnsureSchema(db); err != nil {
 				return err
+			}
+
+			metasForFreshness, err := discoverFilteredMetas(settings, since, until)
+			if err != nil {
+				return err
+			}
+			if len(metasForFreshness) > 0 {
+				stale, staleReason, err := detectStaleIndex(ctx, db, indexPath, metasForFreshness)
+				if err != nil {
+					return err
+				}
+				if stale {
+					switch settings.StaleIndexPolicy {
+					case "ignore":
+					case "warn":
+						fmt.Fprintf(os.Stderr, "warning: stale index detected (%s); results may be outdated\n", staleReason)
+					case "fallback":
+						fmt.Fprintf(os.Stderr, "warning: stale index detected (%s); falling back to streaming scan\n", staleReason)
+						goto fallbackSearch
+					case "error":
+						return errors.Errorf("stale index detected (%s); run `codex-session index build`", staleReason)
+					default:
+						return errors.Errorf("invalid --stale-index-policy %q", settings.StaleIndexPolicy)
+					}
+				}
 			}
 
 			scope := indexdb.ScopeMessages
@@ -309,31 +408,10 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 		}
 	}
 
-	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
-		IncludeFilenameCopies:   false,
-		IncludeReflectionCopies: settings.IncludeCopies,
-		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
-	})
+fallbackSearch:
+	metas, err := discoverFilteredMetas(settings, since, until)
 	if err != nil {
 		return err
-	}
-
-	metas := make([]sessions.SessionMeta, 0, len(paths))
-	for _, p := range paths {
-		meta, err := sessions.ReadSessionMeta(p)
-		if err != nil {
-			continue
-		}
-		if settings.Project != "" && meta.ProjectName() != settings.Project {
-			continue
-		}
-		if since != nil && meta.Timestamp.Before(*since) {
-			continue
-		}
-		if until != nil && meta.Timestamp.After(*until) {
-			continue
-		}
-		metas = append(metas, meta)
 	}
 
 	// Reuse the same selection semantics as list: sort by started_at, skip newest, then apply limit.
