@@ -14,6 +14,8 @@ RelatedFiles:
       Note: Line-level investigation target
     - Path: codex-sessions/cmd/codex-session/main_wiring_test.go
       Note: Command-tree wiring regression tests
+    - Path: codex-sessions/README.md
+      Note: Documented root-level flag behavior decision
     - Path: codex-sessions/cmd/codex-session/search.go
       Note: Representative subcommand behavior check
     - Path: codex-sessions/internal/indexdb/indexdb_test.go
@@ -40,7 +42,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T15:52:00-05:00
+LastUpdated: 2026-03-02T15:56:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -1067,3 +1069,69 @@ go test ./cmd/codex-session -run TestBuildRootCommandWiring -v
 ### Technical details
 
 - Test helper functions `childNames(...)` and `requireCommand(...)` keep assertions concise and readable.
+
+## Step 13: Decide and document root-level flag behavior (task 10)
+
+I closed the outstanding root-flag decision by explicitly documenting that root-level glazed-style flags are not part of the contract. The root command is a command group container; executable semantics and schema-style flags live on subcommands.
+
+This resolves ambiguity from the earlier investigation and gives future maintainers a clear behavior contract.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue and close remaining tasks, including decision/documentation items.
+
+**Inferred user intent:** Remove open-ended questions from the ticket and leave explicit operating rules.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Updated `README.md` with a CLI behavior note:
+  - root command is grouping-only
+  - `--print-schema`-style flags should be used on subcommands
+- Updated design doc 01 with a “Decision update” section to reflect this resolution.
+- Checked off task 10:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 10
+```
+
+### Why
+
+- Prevent repeated confusion when users expect global glazed flags at root level.
+
+### What worked
+
+- Decision is now documented in both user-facing and ticket-analysis docs.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- A small explicit contract note in README removes a disproportionate amount of operator ambiguity.
+
+### What was tricky to build
+
+- Ensuring the note is precise without implying future incompatibility promises beyond the current behavior.
+
+### What warrants a second pair of eyes
+
+- Whether we want to expose a root-level convenience passthrough in a future major revision.
+
+### What should be done in the future
+
+- If root passthrough is ever introduced, add migration notes because current contract is now explicitly documented as subcommand-only.
+
+### Code review instructions
+
+- Review:
+  - `README.md` CLI behavior note
+  - design doc 01 decision update section
+
+### Technical details
+
+- This task is documentation/contract only; no runtime behavior was changed.

@@ -53,6 +53,12 @@ Reflection (uses `codex exec resume ...` under the hood):
 codex-session reflect --limit 5 --output table
 ```
 
+## CLI behavior note
+
+`codex-session` root is a grouping command. Glazed-style flags such as
+`--print-schema` are intentionally supported on concrete subcommands (for example,
+`codex-session search --print-schema`) and are not available on the root command.
+
 ## Development
 
 ```bash

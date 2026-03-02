@@ -121,3 +121,13 @@ Added command-tree wiring tests for top-level and grouped subcommands via buildR
 
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main_wiring_test.go — Asserts command registration coverage for index/cleanup/traces groups
 
+
+## 2026-03-02
+
+Decided and documented root-level flag behavior: glazed-style flags are intentionally subcommand-only.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/README.md — Added explicit CLI behavior note for root vs subcommand flags
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Recorded decision update
+

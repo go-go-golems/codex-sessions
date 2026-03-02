@@ -14,7 +14,7 @@
 - [ ] Decide whether to align `go.work` Go version or standardize `GOWORK=off` for this workspace.
 - [x] Refactor `main.go` with a shared command-registration helper to remove repetition.
 - [x] Add command-tree wiring tests (e.g., `main_wiring_test.go`).
-- [ ] Decide and document whether root-level glazed flags should be supported.
+- [x] Decide and document whether root-level glazed flags should be supported.
 - [x] Validate --case-sensitive parity between indexed and fallback search paths (including tools scope behavior).
 - [x] Audit flag parity: document and test differences for --include-most-recent, --include-reflection-copies, and --limit between indexed and fallback modes.
 - [x] Add scope correctness tests for --scope messages|tools|all including punctuation-heavy queries and tool outputs.
