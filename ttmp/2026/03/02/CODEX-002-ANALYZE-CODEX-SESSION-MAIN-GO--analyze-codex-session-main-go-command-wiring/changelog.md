@@ -131,3 +131,13 @@ Decided and documented root-level flag behavior: glazed-style flags are intentio
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/README.md — Added explicit CLI behavior note for root vs subcommand flags
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Recorded decision update
 
+
+## 2026-03-02
+
+Closed go.work policy decision: workspace mode is canonical after aligning go.work to Go 1.25.7.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Updated decision note and removed open question
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/go.work — Workspace Go version aligned with glazed/go-go-goja requirements
+

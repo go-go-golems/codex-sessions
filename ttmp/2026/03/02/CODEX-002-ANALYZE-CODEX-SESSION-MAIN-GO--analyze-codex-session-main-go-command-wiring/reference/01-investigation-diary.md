@@ -42,7 +42,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T15:56:00-05:00
+LastUpdated: 2026-03-02T16:00:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -1135,3 +1135,68 @@ docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 10
 ### Technical details
 
 - This task is documentation/contract only; no runtime behavior was changed.
+
+## Step 14: Close go.work policy task (task 7)
+
+I closed the remaining workspace-policy task by documenting the current aligned state: `go.work` now targets Go `1.25.7`, matching workspace module requirements. This makes default workspace mode the canonical dev path and retires the prior `GOWORK=off` workaround from active guidance.
+
+This completes the outstanding task list for the ticket.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Finish all remaining tasks with checkoffs, commits, and detailed diary continuity.
+
+**Inferred user intent:** Reach a fully closed, auditable ticket with no dangling follow-ups.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Updated design doc 01 decision section to record resolved workspace policy.
+- Checked off task 7:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 7
+```
+
+- Confirmed all tasks are now complete in `tasks.md`.
+
+### Why
+
+- Remove remaining ambiguity about workspace startup mode and toolchain expectations.
+
+### What worked
+
+- Task list reached full completion status.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- Capturing environment-policy outcomes in the same design doc where the issue was diagnosed keeps onboarding friction low.
+
+### What was tricky to build
+
+- Ensuring policy documentation reflects current workspace reality without reintroducing stale workaround advice.
+
+### What warrants a second pair of eyes
+
+- If module Go version requirements change again, revalidate `go.work` and refresh this note.
+
+### What should be done in the future
+
+- Add a lightweight CI check that ensures `go.work` Go version is not behind workspace module minimums.
+
+### Code review instructions
+
+- Review:
+  - design doc 01 decision section
+  - `tasks.md` completion state
+
+### Technical details
+
+- `go.work` currently declares `go 1.25.7` and includes `codex-sessions`, `glazed`, and `go-go-goja`.

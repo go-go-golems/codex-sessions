@@ -307,13 +307,11 @@ This allows tests to inspect command tree without invoking process exit.
 2. Full CLI framework overhaul.
    - Overkill for current issue.
 
-### Open questions
-
-1. Is `go.work` meant for this repo’s daily dev flow, or should docs standardize `GOWORK=off`?
-
 ### Decision update
 
 Root-level glazed flags are intentionally not supported. The root command is a grouping node; glazed-style flags are expected on executable subcommands (documented in `README.md`).
+
+Workspace Go-version policy is now aligned to workspace modules via `go.work: go 1.25.7`, so default workspace mode is the expected daily dev path (no `GOWORK=off` workaround required for normal operation).
 
 ## 10. References
 
