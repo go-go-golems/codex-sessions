@@ -72,3 +72,12 @@ Implemented stale-index policy in search with modes (ignore/warn/fallback/error)
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search.go — Added stale-index-policy flag and stale-index fallback/error behavior
 - /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search_stale_test.go — Unit coverage for stale index detection (fresh
 
+
+## 2026-03-02
+
+Added scope correctness tests for messages/tools/all including punctuation-heavy tool-call and tool-output queries.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — New scope-focused regression test for punctuation and tool outputs
+

@@ -36,7 +36,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T14:29:00-05:00
+LastUpdated: 2026-03-02T14:33:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -642,3 +642,85 @@ go test ./cmd/codex-session ./internal/indexdb
 - Staleness trigger conditions:
   1. session selected by filters is missing from `sessions` index table
   2. session file mtime is newer than index file mtime
+
+## Step 8: Add scope correctness tests for messages/tools/all
+
+After stale-index policy landed, I moved to scope-correctness coverage. I added a new indexdb regression test that exercises all search scopes with punctuation-heavy tokens and verifies tool output matching behavior explicitly.
+
+This closes a test gap where scope behavior was mostly implicit; now the matrix is encoded in a reproducible test fixture.
+
+### Prompt Context
+
+**User prompt (verbatim):** (see Step 7)
+
+**Assistant interpretation:** Continue sequential task execution with commit/checkoff discipline.
+
+**Inferred user intent:** Keep reducing risk with concrete, test-backed increments.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Added `TestSearchScopesWithPunctuationAndToolOutputs` to:
+  - `internal/indexdb/indexdb_test.go`
+- Fixture includes:
+  - message token (`message-only-token`)
+  - tool call argument path (`/tmp/tool-call.txt`)
+  - tool output punctuation token (`foo/bar`)
+- Assertions added for:
+  - `ScopeMessages`
+  - `ScopeTools` (tool_call and tool_output)
+  - `ScopeAll`
+- Validation:
+
+```bash
+gofmt -w internal/indexdb/indexdb_test.go
+go test ./internal/indexdb ./cmd/codex-session
+```
+
+- Checked off task 13:
+
+```bash
+docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 13
+```
+
+### Why
+
+- Ensure scope behavior is explicitly verified, not inferred from generic search tests.
+
+### What worked
+
+- New test passes and captures both scope routing and punctuation handling.
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- Scope behavior is easiest to validate at `internal/indexdb` level before adding command-level integration layers.
+
+### What was tricky to build
+
+- Ensuring the fixture contains distinct tokens for message-only, tool-call-only, and tool-output-only paths to avoid ambiguous matches.
+
+### What warrants a second pair of eyes
+
+- Whether we should also add command-level `--scope` tests in `cmd/codex-session` for full CLI coverage.
+
+### What should be done in the future
+
+- Add command-level integration tests once search parity contract is finalized.
+
+### Code review instructions
+
+- Review `internal/indexdb/indexdb_test.go` new test block.
+- Re-run:
+
+```bash
+go test ./internal/indexdb -run TestSearchScopesWithPunctuationAndToolOutputs -v
+```
+
+### Technical details
+
+- The test confirms `ScopeTools` can match both tool-call argument text and tool-output text with punctuation-heavy queries.
