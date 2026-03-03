@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-go-golems/codex-session/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
+	"github.com/go-go-golems/glazed/pkg/help"
+	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/spf13/cobra"
 )
 
@@ -102,6 +105,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
+
+	helpSystem := help.NewHelpSystem()
+	if err := doc.AddDocToHelpSystem(helpSystem); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load embedded help docs: %v\n", err)
+		os.Exit(1)
+	}
+	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

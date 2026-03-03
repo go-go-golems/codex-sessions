@@ -48,6 +48,15 @@ Search behavior notes:
 - `--case-sensitive=true` uses fallback scanning (indexed FTS path is case-insensitive).
 - Stale index handling is explicit via `--stale-index-policy=ignore|warn|fallback|error` (default `fallback`).
 
+Built-in help documents:
+
+```bash
+codex-session help --topics
+codex-session help codex-session-getting-started
+codex-session help codex-session-reference-examples
+codex-session help codex-session-architecture
+```
+
 Trace report:
 
 ```bash
