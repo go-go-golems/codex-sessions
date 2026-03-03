@@ -90,3 +90,49 @@ func ReadSessionMeta(path string) (SessionMeta, error) {
 
 	return SessionMeta{}, ErrNoSessionMeta
 }
+
+// ReadSessionMetaPayload reads the first JSONL line and returns the session_meta payload.
+//
+// For the wrapped format, this returns the payload object. For legacy sessions, it returns
+// the entire first-line object (which contains id/timestamp/cwd).
+func ReadSessionMetaPayload(path string) (map[string]any, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+		return nil, ErrNoSessionMeta
+	}
+	line := scanner.Bytes()
+
+	var raw rawLine
+	if err := json.Unmarshal(line, &raw); err != nil {
+		return nil, err
+	}
+
+	if raw.Type == "session_meta" {
+		var payload map[string]any
+		if err := json.Unmarshal(raw.Payload, &payload); err != nil {
+			return nil, err
+		}
+		if len(payload) == 0 {
+			return nil, ErrNoSessionMeta
+		}
+		return payload, nil
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(line, &payload); err != nil {
+		return nil, err
+	}
+	if len(payload) == 0 {
+		return nil, ErrNoSessionMeta
+	}
+	return payload, nil
+}

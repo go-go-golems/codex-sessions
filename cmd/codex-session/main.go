@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-go-golems/codex-session/pkg/doc"
+	internaldoc "github.com/go-go-golems/codex-session/internal/doc"
+	appdoc "github.com/go-go-golems/codex-session/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
@@ -107,8 +108,12 @@ func main() {
 	}
 
 	helpSystem := help.NewHelpSystem()
-	if err := doc.AddDocToHelpSystem(helpSystem); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to load embedded help docs: %v\n", err)
+	if err := internaldoc.AddDocToHelpSystem(helpSystem); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load embedded help docs (internal): %v\n", err)
+		os.Exit(1)
+	}
+	if err := appdoc.AddDocToHelpSystem(helpSystem); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load embedded help docs (app): %v\n", err)
 		os.Exit(1)
 	}
 	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)

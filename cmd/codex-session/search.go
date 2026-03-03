@@ -23,24 +23,27 @@ import (
 )
 
 type SearchSettings struct {
-	SessionsRoot      string `glazed:"sessions-root"`
-	IndexPath         string `glazed:"index-path"`
-	UseIndex          bool   `glazed:"use-index"`
-	StaleIndexPolicy  string `glazed:"stale-index-policy"`
-	RawFTSQuery       bool   `glazed:"raw-fts-query"`
-	Scope             string `glazed:"scope"`
-	Query             string `glazed:"query"`
-	Project           string `glazed:"project"`
-	Since             string `glazed:"since"`
-	Until             string `glazed:"until"`
-	Limit             int    `glazed:"limit"`
-	MaxResults        int    `glazed:"max-results"`
-	IncludeMostRecent bool   `glazed:"include-most-recent"`
-	IncludeCopies     bool   `glazed:"include-reflection-copies"`
-	CaseSensitive     bool   `glazed:"case-sensitive"`
-	PerMessage        bool   `glazed:"per-message"`
-	MaxSnippetChars   int    `glazed:"max-snippet-chars"`
-	SingleLine        bool   `glazed:"single-line"`
+	SessionsRoot      string            `glazed:"sessions-root"`
+	IndexPath         string            `glazed:"index-path"`
+	UseIndex          bool              `glazed:"use-index"`
+	NoReindex         bool              `glazed:"no-reindex"`
+	StaleIndexPolicy  string            `glazed:"stale-index-policy"`
+	RawFTSQuery       bool              `glazed:"raw-fts-query"`
+	Scope             string            `glazed:"scope"`
+	Query             string            `glazed:"query"`
+	Tool              string            `glazed:"tool"`
+	Args              map[string]string `glazed:"arg"`
+	Project           string            `glazed:"project"`
+	Since             string            `glazed:"since"`
+	Until             string            `glazed:"until"`
+	Limit             int               `glazed:"limit"`
+	MaxResults        int               `glazed:"max-results"`
+	IncludeMostRecent bool              `glazed:"include-most-recent"`
+	IncludeCopies     bool              `glazed:"include-reflection-copies"`
+	CaseSensitive     bool              `glazed:"case-sensitive"`
+	PerMessage        bool              `glazed:"per-message"`
+	MaxSnippetChars   int               `glazed:"max-snippet-chars"`
+	SingleLine        bool              `glazed:"single-line"`
 }
 
 type SearchCommand struct {
@@ -84,6 +87,12 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.WithHelp("When index appears stale: ignore, warn, fallback to scan, or error"),
 			),
 			fields.New(
+				"no-reindex",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Disable automatic reindexing when sessions appear stale"),
+			),
+			fields.New(
 				"scope",
 				fields.TypeChoice,
 				fields.WithDefault("messages"),
@@ -101,6 +110,18 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.TypeBool,
 				fields.WithDefault(false),
 				fields.WithHelp("Indexed mode only: treat --query as raw SQLite FTS syntax instead of literal text"),
+			),
+			fields.New(
+				"tool",
+				fields.TypeString,
+				fields.WithDefault(""),
+				fields.WithHelp("Indexed mode only: filter tool name (for tool search; can be used alone)"),
+			),
+			fields.New(
+				"arg",
+				fields.TypeKeyValue,
+				fields.WithDefault(map[string]string{}),
+				fields.WithHelp("Indexed mode only: filter tool-call arguments as key:value (repeatable)"),
 			),
 			fields.New(
 				"project",
@@ -208,18 +229,16 @@ func discoverFilteredMetas(settings *SearchSettings, since, until *time.Time) ([
 func detectStaleIndex(
 	ctx context.Context,
 	db *sql.DB,
-	indexPath string,
 	metas []sessions.SessionMeta,
 ) (bool, string, error) {
-	indexInfo, err := os.Stat(indexPath)
-	if err != nil {
-		return false, "", err
-	}
-	indexModTime := indexInfo.ModTime()
-
 	for _, meta := range metas {
-		var exists int
-		err := db.QueryRowContext(ctx, "SELECT 1 FROM sessions WHERE session_id = ? LIMIT 1", meta.ID).Scan(&exists)
+		var sourceMtime sql.NullInt64
+		var sourceSize sql.NullInt64
+		err := db.QueryRowContext(
+			ctx,
+			"SELECT source_mtime, source_size FROM sessions WHERE session_id = ? LIMIT 1",
+			meta.ID,
+		).Scan(&sourceMtime, &sourceSize)
 		if err == sql.ErrNoRows {
 			return true, fmt.Sprintf("session %s is missing from index", meta.ID), nil
 		}
@@ -231,8 +250,11 @@ func detectStaleIndex(
 		if err != nil {
 			return true, fmt.Sprintf("failed to stat session file %s", filepath.Clean(meta.Path)), nil
 		}
-		if fileInfo.ModTime().After(indexModTime) {
-			return true, fmt.Sprintf("session %s changed after index build", meta.ID), nil
+		if !sourceMtime.Valid || !sourceSize.Valid || sourceMtime.Int64 == 0 || sourceSize.Int64 == 0 {
+			return true, fmt.Sprintf("session %s has no source mtime/size recorded in index", meta.ID), nil
+		}
+		if sourceMtime.Int64 != fileInfo.ModTime().Unix() || sourceSize.Int64 != fileInfo.Size() {
+			return true, fmt.Sprintf("session %s changed after it was indexed", meta.ID), nil
 		}
 	}
 
@@ -248,8 +270,8 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
-	if strings.TrimSpace(settings.Query) == "" {
-		return errors.New("--query is required")
+	if strings.TrimSpace(settings.Query) == "" && len(settings.Args) == 0 && strings.TrimSpace(settings.Tool) == "" {
+		return errors.New("--query is required (or provide --tool and/or --arg key:value for tool search)")
 	}
 
 	var since *time.Time
@@ -291,6 +313,9 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 	indexPath = filepath.Clean(indexPath)
 
 	if settings.UseIndex && !settings.CaseSensitive {
+		if (settings.Tool != "" || len(settings.Args) > 0) && settings.Scope == "messages" {
+			return errors.New("--tool/--arg requires --scope tools or --scope all")
+		}
 		if _, err := os.Stat(indexPath); err == nil {
 			db, err := indexdb.Open(indexPath)
 			if err != nil {
@@ -301,12 +326,49 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 				return err
 			}
 
+			if !settings.NoReindex {
+				rows, err := indexdb.ListSessions(ctx, db, indexdb.ListFilters{
+					Project:                 settings.Project,
+					Since:                   since,
+					Until:                   until,
+					IncludeReflectionCopies: settings.IncludeCopies,
+				})
+				if err != nil {
+					return err
+				}
+				// Align with include-most-recent semantics: by default, skip newest session.
+				rows = filterRows(rows, settings.IncludeMostRecent, 0)
+				staleRows := indexdb.FindStaleRows(rows)
+				if len(staleRows) > 0 {
+					buildOpts := indexdb.DefaultBuildOptions()
+					buildOpts.Force = true
+					for _, row := range staleRows {
+						meta := indexdb.RowToMeta(row)
+						_ = indexdb.BuildSessionIndex(ctx, db, meta, buildOpts)
+					}
+				}
+			}
+
 			metasForFreshness, err := discoverFilteredMetas(settings, since, until)
 			if err != nil {
 				return err
 			}
+			// Align stale-index checks with include-most-recent semantics (and index build defaults).
+			sort.Slice(metasForFreshness, func(i, j int) bool {
+				return metasForFreshness[i].Timestamp.Before(metasForFreshness[j].Timestamp)
+			})
+			if !settings.IncludeMostRecent && len(metasForFreshness) > 0 {
+				newest := metasForFreshness[len(metasForFreshness)-1].Timestamp
+				filtered := metasForFreshness[:0]
+				for _, m := range metasForFreshness {
+					if !m.Timestamp.Equal(newest) {
+						filtered = append(filtered, m)
+					}
+				}
+				metasForFreshness = filtered
+			}
 			if len(metasForFreshness) > 0 {
-				stale, staleReason, err := detectStaleIndex(ctx, db, indexPath, metasForFreshness)
+				stale, staleReason, err := detectStaleIndex(ctx, db, metasForFreshness)
 				if err != nil {
 					return err
 				}
@@ -339,6 +401,8 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 				RawQuery:   settings.RawFTSQuery,
 				MaxResults: settings.MaxResults,
 				Scope:      scope,
+				Tool:       settings.Tool,
+				ArgFilters: settings.Args,
 				Project:    settings.Project,
 				Since:      since,
 				Until:      until,

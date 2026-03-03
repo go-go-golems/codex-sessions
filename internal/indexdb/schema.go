@@ -2,7 +2,7 @@ package indexdb
 
 import "database/sql"
 
-const schemaVersion = 1
+const schemaVersion = 5
 
 func EnsureSchema(db *sql.DB) error {
 	// user_version is a simple integer we can bump if we introduce breaking schema changes.
@@ -10,9 +10,10 @@ func EnsureSchema(db *sql.DB) error {
 	if err := db.QueryRow("PRAGMA user_version;").Scan(&userVersion); err != nil {
 		return err
 	}
-	if userVersion > schemaVersion {
-		// Newer schema than this binary understands.
-		return nil
+	if userVersion != 0 && userVersion != schemaVersion {
+		if err := resetSchema(db); err != nil {
+			return err
+		}
 	}
 
 	stmts := []string{
@@ -23,7 +24,17 @@ func EnsureSchema(db *sql.DB) error {
 			updated_at  TEXT,
 			title       TEXT,
 			source_path TEXT NOT NULL,
-			indexed_at  TEXT
+			indexed_at  TEXT,
+			meta_json   TEXT,
+			cwd         TEXT,
+			host        TEXT,
+			model       TEXT,
+			client      TEXT,
+			session_version TEXT,
+			source_mtime INTEGER,
+			source_size  INTEGER,
+			source_hash  TEXT,
+			is_reflection_copy INTEGER DEFAULT 0
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_source_path ON sessions(source_path);`,
 
@@ -51,7 +62,10 @@ func EnsureSchema(db *sql.DB) error {
 			session_id TEXT NOT NULL,
 			ts         TEXT,
 			tool       TEXT,
-			arguments  TEXT
+			call_id    TEXT,
+			arguments  TEXT,
+			arguments_json TEXT,
+			arguments_flat TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_tool_calls_session_id ON tool_calls(session_id);`,
 
@@ -69,6 +83,7 @@ func EnsureSchema(db *sql.DB) error {
 			session_id TEXT NOT NULL,
 			ts         TEXT,
 			tool       TEXT,
+			call_id    TEXT,
 			output     TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_tool_outputs_session_id ON tool_outputs(session_id);`,
@@ -101,10 +116,42 @@ func EnsureSchema(db *sql.DB) error {
 			snippet    TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_errors_session_id ON errors(session_id);`,
-
-		`PRAGMA user_version = 1;`,
+		`CREATE TABLE IF NOT EXISTS session_meta_kv (
+			session_id TEXT NOT NULL,
+			key        TEXT NOT NULL,
+			value      TEXT NOT NULL,
+			value_type TEXT,
+			PRIMARY KEY (session_id, key)
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_session_meta_kv_key_value ON session_meta_kv(key, value);`,
 	}
 
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	if _, err := db.Exec("PRAGMA user_version = 5;"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func resetSchema(db *sql.DB) error {
+	stmts := []string{
+		"DROP TABLE IF EXISTS tool_outputs_fts;",
+		"DROP TABLE IF EXISTS tool_calls_fts;",
+		"DROP TABLE IF EXISTS messages_fts;",
+		"DROP TABLE IF EXISTS tool_outputs;",
+		"DROP TABLE IF EXISTS tool_calls;",
+		"DROP TABLE IF EXISTS messages;",
+		"DROP TABLE IF EXISTS paths;",
+		"DROP TABLE IF EXISTS errors;",
+		"DROP TABLE IF EXISTS sessions;",
+		"DROP TABLE IF EXISTS session_meta_kv;",
+		"PRAGMA user_version = 0;",
+	}
 	for _, stmt := range stmts {
 		if _, err := db.Exec(stmt); err != nil {
 			return err

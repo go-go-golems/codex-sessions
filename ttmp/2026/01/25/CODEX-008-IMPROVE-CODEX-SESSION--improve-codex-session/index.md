@@ -1,26 +1,23 @@
 ---
-Title: Review parity gaps vs original Python reflect_sessions
-Ticket: CODEX-002-REVIEW-WORK
-Status: complete
+Title: Improve Codex Session
+Ticket: CODEX-008-IMPROVE-CODEX-SESSION
+Status: active
 Topics:
-    - backend
-    - chat
-    - review
-    - go
-    - python
+    - codex
+    - performance
+    - docs
 DocType: index
 Intent: long-term
 Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-25T22:20:13.806960706-05:00
+LastUpdated: 2026-01-25T18:51:10.227994014-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
 
-
-# Review parity gaps vs original Python reflect_sessions
+# Improve Codex Session
 
 ## Overview
 
@@ -37,11 +34,9 @@ Current status: **active**
 
 ## Topics
 
-- backend
-- chat
-- review
-- go
-- python
+- codex
+- performance
+- docs
 
 ## Tasks
 

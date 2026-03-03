@@ -66,7 +66,7 @@ func TestDetectStaleIndex(t *testing.T) {
 		t.Fatalf("expected indexed, got %q (err=%q)", r.Status, r.Error)
 	}
 
-	stale, reason, err := detectStaleIndex(ctx, db, indexPath, []sessions.SessionMeta{meta})
+	stale, reason, err := detectStaleIndex(ctx, db, []sessions.SessionMeta{meta})
 	if err != nil {
 		t.Fatalf("detectStaleIndex (fresh): %v", err)
 	}
@@ -79,14 +79,14 @@ func TestDetectStaleIndex(t *testing.T) {
 	if err := os.Chtimes(path, newMTime, newMTime); err != nil {
 		t.Fatalf("chtimes: %v", err)
 	}
-	stale, reason, err = detectStaleIndex(ctx, db, indexPath, []sessions.SessionMeta{meta})
+	stale, reason, err = detectStaleIndex(ctx, db, []sessions.SessionMeta{meta})
 	if err != nil {
 		t.Fatalf("detectStaleIndex (mtime stale): %v", err)
 	}
 	if !stale {
 		t.Fatalf("expected stale index after file mtime change")
 	}
-	if !strings.Contains(reason, "changed after index build") {
+	if !strings.Contains(reason, "changed after it was indexed") {
 		t.Fatalf("unexpected stale reason: %q", reason)
 	}
 
@@ -104,7 +104,7 @@ func TestDetectStaleIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadSessionMeta missing: %v", err)
 	}
-	stale, reason, err = detectStaleIndex(ctx, db, indexPath, []sessions.SessionMeta{missingMeta})
+	stale, reason, err = detectStaleIndex(ctx, db, []sessions.SessionMeta{missingMeta})
 	if err != nil {
 		t.Fatalf("detectStaleIndex (missing): %v", err)
 	}

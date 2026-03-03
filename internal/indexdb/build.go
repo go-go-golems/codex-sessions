@@ -3,7 +3,12 @@ package indexdb
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-go-golems/codex-session/internal/sessions"
 )
@@ -13,6 +18,16 @@ type BuildOptions struct {
 	MaxChars           int
 	IncludeToolCalls   bool
 	IncludeToolOutputs bool
+}
+
+const DefaultMaxChars = 20000
+
+func DefaultBuildOptions() BuildOptions {
+	return BuildOptions{
+		MaxChars:           DefaultMaxChars,
+		IncludeToolCalls:   true,
+		IncludeToolOutputs: false,
+	}
 }
 
 type SessionBuildStatus string
@@ -66,6 +81,39 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		Status:     SessionFailed,
 	}
 
+	metaPayload, _ := sessions.ReadSessionMetaPayload(meta.Path)
+	metaJSON := ""
+	metaCwd := meta.Cwd
+	metaHost := ""
+	metaModel := ""
+	metaClient := ""
+	metaSessionVersion := ""
+	if metaPayload != nil {
+		metaJSON = marshalMetaJSON(metaPayload)
+		if v := stringFromAny(metaPayload["cwd"]); v != "" {
+			metaCwd = v
+		}
+		metaHost = stringFromAny(metaPayload["host"])
+		metaModel = stringFromAny(metaPayload["model"])
+		metaClient = stringFromAny(metaPayload["client"])
+		metaSessionVersion = stringFromAny(metaPayload["session_version"])
+		if metaSessionVersion == "" {
+			metaSessionVersion = stringFromAny(metaPayload["version"])
+		}
+	}
+
+	var sourceMtime int64
+	var sourceSize int64
+	if info, err := os.Stat(meta.Path); err == nil {
+		sourceMtime = info.ModTime().Unix()
+		sourceSize = info.Size()
+	}
+	sourceHash := ""
+	isReflectionCopy := 0
+	if ok, err := sessions.IsReflectionCopy(meta.Path, sessions.DefaultSelfReflectionPrefix); err == nil && ok {
+		isReflectionCopy = 1
+	}
+
 	updatedAt, err := sessions.ConversationUpdatedAt(meta.Path)
 	if err != nil {
 		res.Error = err.Error()
@@ -97,15 +145,29 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO sessions(session_id, project, started_at, updated_at, title, source_path, indexed_at)
-		 VALUES(?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO sessions(
+			session_id, project, started_at, updated_at, title, source_path, indexed_at,
+			meta_json, cwd, host, model, client, session_version,
+			source_mtime, source_size, source_hash, is_reflection_copy
+		)
+		 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(session_id) DO UPDATE SET
 		   project=excluded.project,
 		   started_at=excluded.started_at,
 		   updated_at=excluded.updated_at,
 		   title=excluded.title,
 		   source_path=excluded.source_path,
-		   indexed_at=excluded.indexed_at`,
+		   indexed_at=excluded.indexed_at,
+		   meta_json=excluded.meta_json,
+		   cwd=excluded.cwd,
+		   host=excluded.host,
+		   model=excluded.model,
+		   client=excluded.client,
+		   session_version=excluded.session_version,
+		   source_mtime=excluded.source_mtime,
+		   source_size=excluded.source_size,
+		   source_hash=excluded.source_hash,
+		   is_reflection_copy=excluded.is_reflection_copy`,
 		meta.ID,
 		res.Project,
 		res.StartedAt,
@@ -113,11 +175,46 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		title,
 		meta.Path,
 		now,
+		metaJSON,
+		metaCwd,
+		metaHost,
+		metaModel,
+		metaClient,
+		metaSessionVersion,
+		sourceMtime,
+		sourceSize,
+		sourceHash,
+		isReflectionCopy,
 	)
 	if err != nil {
 		res.Error = err.Error()
 		res.Duration = time.Since(start)
 		return res
+	}
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM session_meta_kv WHERE session_id = ?", meta.ID); err != nil {
+		res.Error = err.Error()
+		res.Duration = time.Since(start)
+		return res
+	}
+	if len(metaPayload) > 0 {
+		metaKVs := flattenMetaPayload(metaPayload)
+		for _, kv := range metaKVs {
+			if kv.key == "" || kv.value == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx,
+				"INSERT INTO session_meta_kv(session_id, key, value, value_type) VALUES(?, ?, ?, ?)",
+				meta.ID,
+				kv.key,
+				kv.value,
+				kv.valueType,
+			); err != nil {
+				res.Error = err.Error()
+				res.Duration = time.Since(start)
+				return res
+			}
+		}
 	}
 
 	// Clear previous rows for this session for idempotent rebuilds.
@@ -223,12 +320,17 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 	if opts.IncludeToolCalls {
 		for _, c := range f.ToolCalls {
 			args := truncateForIndex(c.Arguments, opts.MaxChars)
+			argsJSON := args
+			argsFlat := truncateForIndex(flattenArguments(c.Arguments), opts.MaxChars)
 			r, err := tx.ExecContext(ctx,
-				"INSERT INTO tool_calls(session_id, ts, tool, arguments) VALUES(?, ?, ?, ?)",
+				"INSERT INTO tool_calls(session_id, ts, tool, call_id, arguments, arguments_json, arguments_flat) VALUES(?, ?, ?, ?, ?, ?, ?)",
 				meta.ID,
 				c.Timestamp.UTC().Format(time.RFC3339),
 				c.Name,
+				c.CallID,
 				args,
+				argsJSON,
+				argsFlat,
 			)
 			if err != nil {
 				res.Error = err.Error()
@@ -244,7 +346,7 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 			if _, err := tx.ExecContext(ctx,
 				"INSERT INTO tool_calls_fts(rowid, arguments, session_id, tool_call_id, ts, tool) VALUES(?, ?, ?, ?, ?, ?)",
 				toolCallID,
-				args,
+				ftsArguments(args, argsFlat),
 				meta.ID,
 				toolCallID,
 				c.Timestamp.UTC().Format(time.RFC3339),
@@ -261,10 +363,11 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 		for _, o := range f.ToolOutputs {
 			out := truncateForIndex(o.Output, opts.MaxChars)
 			r, err := tx.ExecContext(ctx,
-				"INSERT INTO tool_outputs(session_id, ts, tool, output) VALUES(?, ?, ?, ?)",
+				"INSERT INTO tool_outputs(session_id, ts, tool, call_id, output) VALUES(?, ?, ?, ?, ?)",
 				meta.ID,
 				o.Timestamp.UTC().Format(time.RFC3339),
 				o.Name,
+				o.CallID,
 				out,
 			)
 			if err != nil {
@@ -303,4 +406,194 @@ func BuildSessionIndex(ctx context.Context, db *sql.DB, meta sessions.SessionMet
 	res.Status = SessionIndexed
 	res.Duration = time.Since(start)
 	return res
+}
+
+func marshalMetaJSON(payload map[string]any) string {
+	if payload == nil {
+		return ""
+	}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func stringFromAny(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case fmt.Stringer:
+		return t.String()
+	case float64:
+		return fmt.Sprintf("%v", t)
+	case bool:
+		if t {
+			return "true"
+		}
+		return "false"
+	case map[string]any:
+		for _, key := range []string{"name", "id", "version"} {
+			if s, ok := t[key].(string); ok && s != "" {
+				return s
+			}
+		}
+		b, err := json.Marshal(t)
+		if err == nil {
+			return string(b)
+		}
+	case []any:
+		b, err := json.Marshal(t)
+		if err == nil {
+			return string(b)
+		}
+	}
+	return ""
+}
+
+type metaKV struct {
+	key       string
+	value     string
+	valueType string
+}
+
+func flattenMetaPayload(payload map[string]any) []metaKV {
+	var out []metaKV
+	for k, v := range payload {
+		flattenMetaValue(k, v, &out)
+	}
+	return out
+}
+
+func flattenMetaValue(prefix string, v any, out *[]metaKV) {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, child := range t {
+			childKey := prefix + "." + k
+			if prefix == "" {
+				childKey = k
+			}
+			flattenMetaValue(childKey, child, out)
+		}
+	case []any:
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		*out = append(*out, metaKV{key: prefix, value: string(b), valueType: "json"})
+	case string:
+		*out = append(*out, metaKV{key: prefix, value: t, valueType: "string"})
+	case float64:
+		*out = append(*out, metaKV{key: prefix, value: fmt.Sprintf("%v", t), valueType: "number"})
+	case bool:
+		if t {
+			*out = append(*out, metaKV{key: prefix, value: "true", valueType: "bool"})
+		} else {
+			*out = append(*out, metaKV{key: prefix, value: "false", valueType: "bool"})
+		}
+	default:
+		if t == nil {
+			return
+		}
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		*out = append(*out, metaKV{key: prefix, value: string(b), valueType: "json"})
+	}
+}
+
+func flattenArguments(args string) string {
+	trimmed := strings.TrimSpace(args)
+	if trimmed == "" {
+		return ""
+	}
+	var decoded any
+	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+		return ""
+	}
+	var tokens []string
+	collectArgumentTokens("", decoded, &tokens)
+	return strings.Join(tokens, "\n")
+}
+
+func collectArgumentTokens(prefix string, v any, out *[]string) {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, child := range t {
+			childKey := k
+			if prefix != "" {
+				childKey = prefix + "." + k
+			}
+			collectArgumentTokens(childKey, child, out)
+		}
+	case []any:
+		for _, child := range t {
+			collectArgumentTokens(prefix, child, out)
+		}
+	case string:
+		appendArgTokens(prefix, t, out)
+	case float64, bool:
+		appendArgTokens(prefix, fmt.Sprintf("%v", t), out)
+	default:
+		if t == nil {
+			return
+		}
+		b, err := json.Marshal(t)
+		if err != nil {
+			return
+		}
+		appendArgTokens(prefix, string(b), out)
+	}
+}
+
+func ftsArguments(raw string, flat string) string {
+	if flat != "" {
+		return flat
+	}
+	return raw
+}
+
+func appendArgTokens(prefix string, value string, out *[]string) {
+	valToken := normalizeArgToken(value)
+	if valToken == "" {
+		return
+	}
+	if prefix == "" {
+		*out = append(*out, valToken)
+		return
+	}
+	keyToken := normalizeArgKey(prefix)
+	if keyToken == "" {
+		*out = append(*out, valToken)
+		return
+	}
+	*out = append(*out, fmt.Sprintf("%s__%s", keyToken, valToken))
+	*out = append(*out, valToken)
+}
+
+func normalizeArgKey(s string) string {
+	return normalizeArgToken(strings.ReplaceAll(s, ".", "_"))
+}
+
+func normalizeArgToken(s string) string {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	lastUnderscore := false
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			lastUnderscore = false
+			continue
+		}
+		if !lastUnderscore {
+			b.WriteRune('_')
+			lastUnderscore = true
+		}
+	}
+	out := strings.Trim(b.String(), "_")
+	return out
 }
