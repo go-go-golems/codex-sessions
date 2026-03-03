@@ -17,15 +17,15 @@ import (
 )
 
 type CleanupReflectionCopiesSettings struct {
-	SessionsRoot string `glazed.parameter:"sessions-root"`
-	Prefix       string `glazed.parameter:"prefix"`
-	DryRun       bool   `glazed.parameter:"dry-run"`
-	Limit        int    `glazed.parameter:"limit"`
-	Mode         string `glazed.parameter:"mode"`
+	SessionsRoot string `glazed:"sessions-root"`
+	Prefix       string `glazed:"prefix"`
+	DryRun       bool   `glazed:"dry-run"`
+	Limit        int    `glazed:"limit"`
+	Mode         string `glazed:"mode"`
 
-	Project string `glazed.parameter:"project"`
-	Since   string `glazed.parameter:"since"`
-	Until   string `glazed.parameter:"until"`
+	Project string `glazed:"project"`
+	Since   string `glazed:"since"`
+	Until   string `glazed:"until"`
 }
 
 type CleanupReflectionCopiesCommand struct {
@@ -104,7 +104,7 @@ func (c *CleanupReflectionCopiesCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &CleanupReflectionCopiesSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

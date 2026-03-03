@@ -22,22 +22,22 @@ import (
 )
 
 type TracesMDSettings struct {
-	SessionsRoot      string `glazed.parameter:"sessions-root"`
-	Project           string `glazed.parameter:"project"`
-	Since             string `glazed.parameter:"since"`
-	Until             string `glazed.parameter:"until"`
-	SessionID         string `glazed.parameter:"session-id"`
-	SessionIDs        string `glazed.parameter:"session-ids"`
-	Limit             int    `glazed.parameter:"limit"`
-	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
+	SessionsRoot      string `glazed:"sessions-root"`
+	Project           string `glazed:"project"`
+	Since             string `glazed:"since"`
+	Until             string `glazed:"until"`
+	SessionID         string `glazed:"session-id"`
+	SessionIDs        string `glazed:"session-ids"`
+	Limit             int    `glazed:"limit"`
+	IncludeMostRecent bool   `glazed:"include-most-recent"`
 
-	MDOutput       string `glazed.parameter:"md-output"`
-	EntriesPerFile int    `glazed.parameter:"entries-per-file"`
-	MaxStrLen      int    `glazed.parameter:"max-str-len"`
-	MaxListLen     int    `glazed.parameter:"max-list-len"`
-	IncludeMeta    bool   `glazed.parameter:"include-entry-metadata"`
-	PayloadTypes   string `glazed.parameter:"payload-types"`
-	IncludeRaw     bool   `glazed.parameter:"include-raw-payload"`
+	MDOutput       string `glazed:"md-output"`
+	EntriesPerFile int    `glazed:"entries-per-file"`
+	MaxStrLen      int    `glazed:"max-str-len"`
+	MaxListLen     int    `glazed:"max-list-len"`
+	IncludeMeta    bool   `glazed:"include-entry-metadata"`
+	PayloadTypes   string `glazed:"payload-types"`
+	IncludeRaw     bool   `glazed:"include-raw-payload"`
 }
 
 type TracesMDCommand struct {
@@ -156,7 +156,7 @@ func (c *TracesMDCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &TracesMDSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

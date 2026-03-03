@@ -18,14 +18,14 @@ import (
 )
 
 type ExportSettings struct {
-	SessionsRoot string `glazed.parameter:"sessions-root"`
-	SessionID    string `glazed.parameter:"session-id"`
-	Path         string `glazed.parameter:"path"`
+	SessionsRoot string `glazed:"sessions-root"`
+	SessionID    string `glazed:"session-id"`
+	Path         string `glazed:"path"`
 
-	Shape      string `glazed.parameter:"shape"`   // document|rows
-	Extract    string `glazed.parameter:"extract"` // minimal|timeline|facets|all
-	MaxChars   int    `glazed.parameter:"max-chars"`
-	SingleLine bool   `glazed.parameter:"single-line"`
+	Shape      string `glazed:"shape"`   // document|rows
+	Extract    string `glazed:"extract"` // minimal|timeline|facets|all
+	MaxChars   int    `glazed:"max-chars"`
+	SingleLine bool   `glazed:"single-line"`
 }
 
 type ExportCommand struct {
@@ -102,7 +102,7 @@ func (c *ExportCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ExportSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

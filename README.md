@@ -41,6 +41,13 @@ codex-session index build --output table
 codex-session search --query "TODO" --output table
 ```
 
+Search behavior notes:
+
+- Indexed search treats `--query` as literal text by default (safe for punctuation-heavy IDs/paths).
+- Use `--raw-fts-query` to opt into native SQLite FTS expression syntax.
+- `--case-sensitive=true` uses fallback scanning (indexed FTS path is case-insensitive).
+- Stale index handling is explicit via `--stale-index-policy=ignore|warn|fallback|error` (default `fallback`).
+
 Trace report:
 
 ```bash
@@ -66,6 +73,11 @@ make lint
 make test
 make build
 ```
+
+Local workspace note:
+
+- This repo is commonly developed in a multi-module workspace (`go.work`) with sibling `glazed` and `go-go-goja`.
+- If you run with `GOWORK=off`, local module API changes may not be visible because Go will resolve released module versions instead.
 
 Pre-commit hooks are managed via `lefthook.yml`:
 

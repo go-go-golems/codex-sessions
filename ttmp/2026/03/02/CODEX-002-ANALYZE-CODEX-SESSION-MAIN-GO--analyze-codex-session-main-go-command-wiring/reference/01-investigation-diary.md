@@ -42,7 +42,7 @@ RelatedFiles:
       Note: Diary references parity/staleness evidence
 ExternalSources: []
 Summary: Chronological investigation of cmd/codex-session/main.go and codex-session search/index reliability behavior.
-LastUpdated: 2026-03-02T16:00:00-05:00
+LastUpdated: 2026-03-02T16:30:00-05:00
 WhatFor: Preserve commands, evidence, fixes, and decisions across wiring and search/index investigations.
 WhenToUse: Continue this investigation, rerun scripts, or validate behavior in a fresh checkout.
 ---
@@ -1200,3 +1200,186 @@ docmgr task check --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --id 7
 ### Technical details
 
 - `go.work` currently declares `go 1.25.7` and includes `codex-sessions`, `glazed`, and `go-go-goja`.
+
+## Step 15: Author comprehensive postmortem, register ticket bookkeeping, and upload updated bundle
+
+I produced a dedicated postmortem/onboarding document that explains the full CODEX-002 lifecycle from root-cause discovery through implementation and validation, then prepared the ticket for delivery by updating relationships/changelog and uploading the refreshed bundle to reMarkable.
+
+This step closes the loop for handoff: intern-readable narrative, reproducible references, ticket metadata consistency, and verified distribution.
+
+### Prompt Context
+
+**User prompt (verbatim):** "write a detailed postmortem of everything you did, and store in the ticket and upload to remarkable. reate a detailed postmortem and explanation of the changes that is very detailed for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references.
+  It should be very clear and detailed. Store in the ticket and the nupload to remarkable."
+
+**Assistant interpretation:** Produce a new long-form postmortem document in the existing CODEX-002 ticket, then run docmgr bookkeeping and upload the bundle to the ticket-specific reMarkable folder.
+
+**Inferred user intent:** Leave a complete operational and onboarding artifact package, not only code changes.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Authored new design doc:
+  - `design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md`
+- Included:
+  - executive summary and full timeline
+  - architecture diagrams and command wiring maps
+  - root-cause analysis and implementation details
+  - pseudocode for stale-index policy and search execution
+  - API references and file-level map for intern onboarding
+- Ran ticket metadata updates and delivery commands:
+
+```bash
+docmgr doc relate --doc "<...>/design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md" \
+  --file-note "/home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search.go:Search command stale-index policy and backend selection contract" \
+  --file-note "/home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/search.go:Indexed search query literalization and raw-query support" \
+  --file-note "/home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main.go:Refactored root command wiring helpers and grouped command construction"
+
+docmgr changelog update --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO \
+  --entry "Authored comprehensive postmortem and intern onboarding guide (design-doc 03) and prepared updated delivery bundle." \
+  --file-note "/home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md:Primary postmortem artifact"
+
+docmgr doctor --ticket CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --stale-after 30
+
+remarquee status
+remarquee cloud account --non-interactive
+remarquee upload bundle --dry-run "<doc1>" "<doc2>" "<doc3>" "<diary>" \
+  --name "CODEX-002 Comprehensive Postmortem and Reliability Assessment" \
+  --remote-dir "/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO" \
+  --toc-depth 2
+remarquee upload bundle "<doc1>" "<doc2>" "<doc3>" "<diary>" \
+  --name "CODEX-002 Comprehensive Postmortem and Reliability Assessment" \
+  --remote-dir "/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO" \
+  --toc-depth 2
+remarquee cloud ls /ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --long --non-interactive
+```
+
+### Why
+
+- The user requested an intern-ready, detailed postmortem and explicit reMarkable delivery.
+- Ticket metadata updates keep documentation discoverable and auditable in future investigations.
+
+### What worked
+
+- The new design doc was generated in the ticket and includes diagrams, pseudocode, prose, API references, and file references as requested.
+- The delivery flow was prepared in the same ticket folder structure used earlier for CODEX-002 uploads.
+
+### What didn't work
+
+- N/A at authoring stage; any upload or doctor warnings are captured in the command outputs during this step’s execution.
+
+### What I learned
+
+- Keeping postmortem content as a dedicated third design doc (`03-*`) avoids destabilizing previously referenced reports while still providing a complete onboarding path.
+
+### What was tricky to build
+
+- Balancing historical narrative detail with intern usability required explicit sectioning: architecture first, then incident chronology, then implementation details, then runbook.
+
+### What warrants a second pair of eyes
+
+- Confirm that future refactors touching search/index semantics keep design-doc 03 aligned with runtime behavior and tests.
+
+### What should be done in the future
+
+- Add a periodic doc refresh task whenever search semantics or stale-index policy defaults change.
+
+### Code review instructions
+
+- Review:
+  - `design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md`
+  - ticket `changelog.md` entry for this step
+  - reMarkable folder listing under `/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO`
+
+### Technical details
+
+- New postmortem doc path:
+  - `/home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md`
+
+## Step 16: Execute final reMarkable upload and verify cloud listing
+
+After preparing ticket bookkeeping, I executed the full reMarkable delivery flow with a dry-run first, then the real upload, and finally a remote directory listing. This gives an auditable delivery endpoint for the new postmortem bundle.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 15)
+
+**Assistant interpretation:** Complete the actual device/cloud delivery and verify existence in the target ticket folder.
+
+**Inferred user intent:** Not just author docs, but ensure they are available on reMarkable.
+
+**Commit (code):** N/A
+
+### What I did
+
+- Preflight:
+
+```bash
+remarquee status
+remarquee cloud account --non-interactive
+```
+
+- Upload:
+
+```bash
+remarquee upload bundle --dry-run "<doc1>" "<doc2>" "<doc3>" "<diary>" \
+  --name "CODEX-002 Comprehensive Postmortem and Reliability Assessment" \
+  --remote-dir "/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO" \
+  --toc-depth 2
+
+remarquee upload bundle "<doc1>" "<doc2>" "<doc3>" "<diary>" \
+  --name "CODEX-002 Comprehensive Postmortem and Reliability Assessment" \
+  --remote-dir "/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO" \
+  --toc-depth 2
+```
+
+- Verify:
+
+```bash
+remarquee cloud ls /ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO --long --non-interactive
+```
+
+### Why
+
+- The user explicitly requested upload to reMarkable and a completed ticket artifact handoff.
+
+### What worked
+
+- Preflight:
+  - `remarquee: ok`
+  - `user=wesen@ruinwesen.com sync_version=1.5`
+- Dry-run and upload both succeeded.
+- Cloud listing confirmed documents in target folder, including:
+  - `CODEX-002 Comprehensive Postmortem and Reliability Assessment`
+  - `CODEX-002 Codex-Sessions Reliability Investigation`
+  - `CODEX-002 main.go Wiring Investigation`
+
+### What didn't work
+
+- N/A for this step.
+
+### What I learned
+
+- Bundling all three design docs plus the diary into one PDF provides a single, high-signal intern handoff artifact while preserving prior uploads.
+
+### What was tricky to build
+
+- Ensuring stable ordering and title clarity in a multi-document bundle; numeric prefixes in doc names maintained predictable ordering.
+
+### What warrants a second pair of eyes
+
+- Optional visual QA on-device to confirm pagination and ToC rendering quality for long sections/diagrams.
+
+### What should be done in the future
+
+- Keep bundle naming consistent across future revisions (same ticket prefix + descriptor) so cloud history remains searchable.
+
+### Code review instructions
+
+- Re-run cloud listing command and validate target filename presence under `/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO`.
+
+### Technical details
+
+- Target remote folder:
+  - `/ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO`

@@ -16,8 +16,8 @@ import (
 )
 
 type IndexStatsSettings struct {
-	SessionsRoot string `glazed.parameter:"sessions-root"`
-	IndexPath    string `glazed.parameter:"index-path"`
+	SessionsRoot string `glazed:"sessions-root"`
+	IndexPath    string `glazed:"index-path"`
 }
 
 type IndexStatsCommand struct {
@@ -55,7 +55,7 @@ func (c *IndexStatsCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &IndexStatsSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

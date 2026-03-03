@@ -21,32 +21,32 @@ import (
 )
 
 type ReflectSettings struct {
-	SessionsRoot      string `glazed.parameter:"sessions-root"`
-	CacheDir          string `glazed.parameter:"cache-dir"`
-	Project           string `glazed.parameter:"project"`
-	Since             string `glazed.parameter:"since"`
-	Until             string `glazed.parameter:"until"`
-	SessionID         string `glazed.parameter:"session-id"`
-	SessionIDs        string `glazed.parameter:"session-ids"`
-	Limit             int    `glazed.parameter:"limit"`
-	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
-	MaxWorkers        int    `glazed.parameter:"max-workers"`
-	Sequential        bool   `glazed.parameter:"sequential"`
+	SessionsRoot      string `glazed:"sessions-root"`
+	CacheDir          string `glazed:"cache-dir"`
+	Project           string `glazed:"project"`
+	Since             string `glazed:"since"`
+	Until             string `glazed:"until"`
+	SessionID         string `glazed:"session-id"`
+	SessionIDs        string `glazed:"session-ids"`
+	Limit             int    `glazed:"limit"`
+	IncludeMostRecent bool   `glazed:"include-most-recent"`
+	MaxWorkers        int    `glazed:"max-workers"`
+	Sequential        bool   `glazed:"sequential"`
 
-	Prefix       string `glazed.parameter:"prefix"`
-	PromptPreset string `glazed.parameter:"prompt-preset"`
-	PromptFile   string `glazed.parameter:"prompt-file"`
-	PromptText   string `glazed.parameter:"prompt-text"`
-	RefreshMode  string `glazed.parameter:"refresh-mode"`
+	Prefix       string `glazed:"prefix"`
+	PromptPreset string `glazed:"prompt-preset"`
+	PromptFile   string `glazed:"prompt-file"`
+	PromptText   string `glazed:"prompt-text"`
+	RefreshMode  string `glazed:"refresh-mode"`
 
-	CodexSandbox        string `glazed.parameter:"codex-sandbox"`
-	CodexApproval       string `glazed.parameter:"codex-approval"`
-	CodexTimeoutSeconds int    `glazed.parameter:"codex-timeout-seconds"`
-	CodexPath           string `glazed.parameter:"codex-path"`
-	Debug               bool   `glazed.parameter:"debug"`
+	CodexSandbox        string `glazed:"codex-sandbox"`
+	CodexApproval       string `glazed:"codex-approval"`
+	CodexTimeoutSeconds int    `glazed:"codex-timeout-seconds"`
+	CodexPath           string `glazed:"codex-path"`
+	Debug               bool   `glazed:"debug"`
 
-	ExtraMetadata bool `glazed.parameter:"extra-metadata"`
-	DryRun        bool `glazed.parameter:"dry-run"`
+	ExtraMetadata bool `glazed:"extra-metadata"`
+	DryRun        bool `glazed:"dry-run"`
 }
 
 type ReflectCommand struct {
@@ -233,7 +233,7 @@ func (c *ReflectCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ReflectSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

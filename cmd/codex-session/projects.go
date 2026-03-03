@@ -20,8 +20,8 @@ import (
 )
 
 type ProjectsSettings struct {
-	SessionsRoot  string `glazed.parameter:"sessions-root"`
-	IncludeCopies bool   `glazed.parameter:"include-reflection-copies"`
+	SessionsRoot  string `glazed:"sessions-root"`
+	IncludeCopies bool   `glazed:"include-reflection-copies"`
 }
 
 type ProjectsCommand struct {
@@ -71,7 +71,7 @@ func (c *ProjectsCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ProjectsSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 
