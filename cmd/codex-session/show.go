@@ -17,13 +17,13 @@ import (
 )
 
 type ShowSettings struct {
-	SessionsRoot string `glazed.parameter:"sessions-root"`
-	SessionID    string `glazed.parameter:"session-id"`
-	Path         string `glazed.parameter:"path"`
-	MaxChars     int    `glazed.parameter:"max-chars"`
-	View         string `glazed.parameter:"view"`
-	SingleLine   bool   `glazed.parameter:"single-line"`
-	Limit        int    `glazed.parameter:"limit"`
+	SessionsRoot string `glazed:"sessions-root"`
+	SessionID    string `glazed:"session-id"`
+	Path         string `glazed:"path"`
+	MaxChars     int    `glazed:"max-chars"`
+	View         string `glazed:"view"`
+	SingleLine   bool   `glazed:"single-line"`
+	Limit        int    `glazed:"limit"`
 }
 
 type ShowCommand struct {
@@ -95,7 +95,7 @@ func (c *ShowCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ShowSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

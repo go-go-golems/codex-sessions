@@ -19,18 +19,18 @@ import (
 )
 
 type IndexBuildSettings struct {
-	SessionsRoot       string `glazed.parameter:"sessions-root"`
-	IndexPath          string `glazed.parameter:"index-path"`
-	Project            string `glazed.parameter:"project"`
-	Since              string `glazed.parameter:"since"`
-	Until              string `glazed.parameter:"until"`
-	Limit              int    `glazed.parameter:"limit"`
-	IncludeMostRecent  bool   `glazed.parameter:"include-most-recent"`
-	IncludeCopies      bool   `glazed.parameter:"include-reflection-copies"`
-	Force              bool   `glazed.parameter:"force"`
-	MaxChars           int    `glazed.parameter:"max-chars"`
-	IncludeToolCalls   bool   `glazed.parameter:"include-tool-calls"`
-	IncludeToolOutputs bool   `glazed.parameter:"include-tool-outputs"`
+	SessionsRoot       string `glazed:"sessions-root"`
+	IndexPath          string `glazed:"index-path"`
+	Project            string `glazed:"project"`
+	Since              string `glazed:"since"`
+	Until              string `glazed:"until"`
+	Limit              int    `glazed:"limit"`
+	IncludeMostRecent  bool   `glazed:"include-most-recent"`
+	IncludeCopies      bool   `glazed:"include-reflection-copies"`
+	Force              bool   `glazed:"force"`
+	MaxChars           int    `glazed:"max-chars"`
+	IncludeToolCalls   bool   `glazed:"include-tool-calls"`
+	IncludeToolOutputs bool   `glazed:"include-tool-outputs"`
 }
 
 type IndexBuildCommand struct {
@@ -132,7 +132,7 @@ func (c *IndexBuildCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &IndexBuildSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 

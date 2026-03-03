@@ -13,7 +13,7 @@ import (
 )
 
 func isExecutable(path string) bool {
-	info, err := os.Stat(path)
+	info, err := os.Stat(path) //nolint:gosec // G703: local executable discovery (CLI/env/PATH/glob), os.Stat only checks existence/mode.
 	if err != nil || info.IsDir() {
 		return false
 	}
@@ -30,7 +30,7 @@ func newestByMtime(paths []string) string {
 		if !isExecutable(p) {
 			continue
 		}
-		info, err := os.Stat(p)
+		info, err := os.Stat(p) //nolint:gosec // G703: local executable discovery (CLI/env/PATH/glob), os.Stat only reads metadata.
 		if err != nil {
 			continue
 		}

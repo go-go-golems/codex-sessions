@@ -4,213 +4,119 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-go-golems/codex-session/internal/doc"
+	internaldoc "github.com/go-go-golems/codex-session/internal/doc"
+	appdoc "github.com/go-go-golems/codex-session/pkg/doc"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/schema"
 	"github.com/go-go-golems/glazed/pkg/help"
 	help_cmd "github.com/go-go-golems/glazed/pkg/help/cmd"
 	"github.com/spf13/cobra"
 )
 
-func main() {
+func defaultParserConfig() cli.CobraParserConfig {
+	return cli.CobraParserConfig{
+		ShortHelpSections: []string{schema.DefaultSlug},
+		MiddlewaresFunc:   cli.CobraCommandDefaultMiddlewares,
+	}
+}
+
+func buildGlazedCommand[T cmds.Command](label string, ctor func() (T, error)) (*cobra.Command, error) {
+	command, err := ctor()
+	if err != nil {
+		return nil, fmt.Errorf("error creating %s command: %w", label, err)
+	}
+	cobraCommand, err := cli.BuildCobraCommand(command, cli.WithParserConfig(defaultParserConfig()))
+	if err != nil {
+		return nil, fmt.Errorf("error building cobra %s command: %w", label, err)
+	}
+	return cobraCommand, nil
+}
+
+func addGlazedCommand[T cmds.Command](parent *cobra.Command, label string, ctor func() (T, error)) error {
+	cobraCommand, err := buildGlazedCommand(label, ctor)
+	if err != nil {
+		return err
+	}
+	parent.AddCommand(cobraCommand)
+	return nil
+}
+
+func buildRootCommand() (*cobra.Command, error) {
 	rootCmd := &cobra.Command{
 		Use:   "codex-session",
 		Short: "Query and reflect on Codex session histories",
 	}
 
-	helpSystem := help.NewHelpSystem()
-	if err := doc.AddDocToHelpSystem(helpSystem); err != nil {
-		cobra.CheckErr(err)
+	if err := addGlazedCommand(rootCmd, "projects", NewProjectsCommand); err != nil {
+		return nil, err
 	}
-	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
-
-	projectsCmd, err := NewProjectsCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating projects command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(rootCmd, "list", NewListCommand); err != nil {
+		return nil, err
 	}
-	cobraProjectsCmd, err := cli.BuildCobraCommand(projectsCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(rootCmd, "show", NewShowCommand); err != nil {
+		return nil, err
 	}
-	rootCmd.AddCommand(cobraProjectsCmd)
-
-	listCmd, err := NewListCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating list command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(rootCmd, "search", NewSearchCommand); err != nil {
+		return nil, err
 	}
-	cobraListCmd, err := cli.BuildCobraCommand(listCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(rootCmd, "export", NewExportCommand); err != nil {
+		return nil, err
 	}
-	rootCmd.AddCommand(cobraListCmd)
-
-	showCmd, err := NewShowCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating show command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(rootCmd, "reflect", NewReflectCommand); err != nil {
+		return nil, err
 	}
-	cobraShowCmd, err := cli.BuildCobraCommand(showCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
-		os.Exit(1)
-	}
-	rootCmd.AddCommand(cobraShowCmd)
-
-	searchCmd, err := NewSearchCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating search command: %v\n", err)
-		os.Exit(1)
-	}
-	cobraSearchCmd, err := cli.BuildCobraCommand(searchCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
-		os.Exit(1)
-	}
-	rootCmd.AddCommand(cobraSearchCmd)
-
-	exportCmd, err := NewExportCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating export command: %v\n", err)
-		os.Exit(1)
-	}
-	cobraExportCmd, err := cli.BuildCobraCommand(exportCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra command: %v\n", err)
-		os.Exit(1)
-	}
-	rootCmd.AddCommand(cobraExportCmd)
-
-	reflectCmd, err := NewReflectCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating reflect command: %v\n", err)
-		os.Exit(1)
-	}
-	cobraReflectCmd, err := cli.BuildCobraCommand(reflectCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra reflect command: %v\n", err)
-		os.Exit(1)
-	}
-	rootCmd.AddCommand(cobraReflectCmd)
 
 	indexCmd := &cobra.Command{
 		Use:   "index",
 		Short: "Build and inspect the local SQLite/FTS index",
 	}
 	rootCmd.AddCommand(indexCmd)
-
-	indexBuildCmd, err := NewIndexBuildCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating index build command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(indexCmd, "index build", NewIndexBuildCommand); err != nil {
+		return nil, err
 	}
-	cobraIndexBuildCmd, err := cli.BuildCobraCommand(indexBuildCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra index build command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(indexCmd, "index stats", NewIndexStatsCommand); err != nil {
+		return nil, err
 	}
-	indexCmd.AddCommand(cobraIndexBuildCmd)
-
-	indexStatsCmd, err := NewIndexStatsCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating index stats command: %v\n", err)
-		os.Exit(1)
-	}
-	cobraIndexStatsCmd, err := cli.BuildCobraCommand(indexStatsCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra index stats command: %v\n", err)
-		os.Exit(1)
-	}
-	indexCmd.AddCommand(cobraIndexStatsCmd)
 
 	cleanupCmd := &cobra.Command{
 		Use:   "cleanup",
 		Short: "Clean up session artifacts (e.g., reflection copies)",
 	}
 	rootCmd.AddCommand(cleanupCmd)
-
-	cleanupReflectionCopiesCmd, err := NewCleanupReflectionCopiesCommand()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating cleanup reflection-copies command: %v\n", err)
-		os.Exit(1)
+	if err := addGlazedCommand(cleanupCmd, "cleanup reflection-copies", NewCleanupReflectionCopiesCommand); err != nil {
+		return nil, err
 	}
-	cobraCleanupReflectionCopiesCmd, err := cli.BuildCobraCommand(cleanupReflectionCopiesCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra cleanup reflection-copies command: %v\n", err)
-		os.Exit(1)
-	}
-	cleanupCmd.AddCommand(cobraCleanupReflectionCopiesCmd)
 
 	tracesCmd := &cobra.Command{
 		Use:   "traces",
 		Short: "Export curated trace reports",
 	}
 	rootCmd.AddCommand(tracesCmd)
+	if err := addGlazedCommand(tracesCmd, "traces md", NewTracesMDCommand); err != nil {
+		return nil, err
+	}
 
-	tracesMDCmd, err := NewTracesMDCommand()
+	return rootCmd, nil
+}
+
+func main() {
+	rootCmd, err := buildRootCommand()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating traces md command: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-	cobraTracesMDCmd, err := cli.BuildCobraCommand(tracesMDCmd,
-		cli.WithParserConfig(cli.CobraParserConfig{
-			ShortHelpLayers: []string{schema.DefaultSlug},
-			MiddlewaresFunc: cli.CobraCommandDefaultMiddlewares,
-		}),
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error building cobra traces md command: %v\n", err)
+
+	helpSystem := help.NewHelpSystem()
+	if err := internaldoc.AddDocToHelpSystem(helpSystem); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load embedded help docs (internal): %v\n", err)
 		os.Exit(1)
 	}
-	tracesCmd.AddCommand(cobraTracesMDCmd)
+	if err := appdoc.AddDocToHelpSystem(helpSystem); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load embedded help docs (app): %v\n", err)
+		os.Exit(1)
+	}
+	help_cmd.SetupCobraRootCommand(helpSystem, rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

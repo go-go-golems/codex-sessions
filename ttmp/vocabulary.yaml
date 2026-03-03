@@ -5,6 +5,12 @@ topics:
       description: Backend services
     - slug: websocket
       description: WebSocket lifecycle & events
+    - slug: cli
+      description: Command-line interfaces and command wiring
+    - slug: codex-sessions
+      description: Codex session tooling and archives
+    - slug: wiring
+      description: Command registration and glue code
 docTypes:
     - slug: design-doc
       description: Structured rationale and architecture notes

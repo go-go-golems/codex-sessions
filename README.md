@@ -41,6 +41,22 @@ codex-session index build --output table
 codex-session search --query "TODO" --output table
 ```
 
+Search behavior notes:
+
+- Indexed search treats `--query` as literal text by default (safe for punctuation-heavy IDs/paths).
+- Use `--raw-fts-query` to opt into native SQLite FTS expression syntax.
+- `--case-sensitive=true` uses fallback scanning (indexed FTS path is case-insensitive).
+- Stale index handling is explicit via `--stale-index-policy=ignore|warn|fallback|error` (default `fallback`).
+
+Built-in help documents:
+
+```bash
+codex-session help --topics
+codex-session help codex-session-getting-started
+codex-session help codex-session-reference-examples
+codex-session help codex-session-architecture
+```
+
 Trace report:
 
 ```bash
@@ -53,6 +69,12 @@ Reflection (uses `codex exec resume ...` under the hood):
 codex-session reflect --limit 5 --output table
 ```
 
+## CLI behavior note
+
+`codex-session` root is a grouping command. Glazed-style flags such as
+`--print-schema` are intentionally supported on concrete subcommands (for example,
+`codex-session search --print-schema`) and are not available on the root command.
+
 ## Development
 
 ```bash
@@ -60,6 +82,11 @@ make lint
 make test
 make build
 ```
+
+Local workspace note:
+
+- This repo is commonly developed in a multi-module workspace (`go.work`) with sibling `glazed` and `go-go-goja`.
+- If you run with `GOWORK=off`, local module API changes may not be visible because Go will resolve released module versions instead.
 
 Pre-commit hooks are managed via `lefthook.yml`:
 

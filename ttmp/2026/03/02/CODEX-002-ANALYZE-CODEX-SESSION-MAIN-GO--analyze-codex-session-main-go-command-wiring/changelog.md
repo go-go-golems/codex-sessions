@@ -1,0 +1,162 @@
+# Changelog
+
+## 2026-03-02
+
+- Created CODEX-002 investigation workspace for `cmd/codex-session/main.go`.
+- Completed wiring and runtime investigation with findings:
+  - `main.go` command registration is currently complete (10 constructors, 10 registrations).
+  - Default workspace startup fails due `go.work` vs module Go-version mismatch.
+  - `main.go` has high duplication and no dedicated wiring tests.
+  - Root-level glazed-style flags are not available at root command.
+- Added reproducible audit script:
+  - `scripts/main-go-wiring-audit.sh`
+- Authored detailed design analysis and investigation diary.
+
+## 2026-03-02
+
+Completed main.go wiring investigation with reproducible audit script and evidence-backed findings.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main.go — Investigated command registration and parser wiring
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/main-go-wiring-audit.sh — Reproducible evidence collection
+
+
+## 2026-03-02
+
+Uploaded CODEX-002 investigation bundle to reMarkable: /ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/reference/01-investigation-diary.md — Included in uploaded bundle
+
+
+## 2026-03-02
+
+Fixed indexed search punctuation-query failures by literalizing FTS input and added regression tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — Regression tests for CODEX IDs
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/search.go — Literal FTS query normalization for safe user input
+
+
+## 2026-03-02
+
+Expanded ticket to full codex-sessions reliability assessment, added parity tasks, and created synthetic/real-corpus search audit scripts.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/02-codex-sessions-comprehensive-reliability-assessment.md — Full assessment with architecture
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-behavior-audit.sh — Synthetic parity and stale-index reproducibility
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh — Real-corpus indexed-vs-fallback comparator
+
+
+## 2026-03-02
+
+Uploaded expanded CODEX-002 reliability bundle to reMarkable at /ai/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/02-codex-sessions-comprehensive-reliability-assessment.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/reference/01-investigation-diary.md — Included in uploaded bundle
+
+
+## 2026-03-02
+
+Implemented stale-index policy in search with modes (ignore/warn/fallback/error) and added stale detection tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search.go — Added stale-index-policy flag and stale-index fallback/error behavior
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search_stale_test.go — Unit coverage for stale index detection (fresh
+
+
+## 2026-03-02
+
+Added scope correctness tests for messages/tools/all including punctuation-heavy tool-call and tool-output queries.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — New scope-focused regression test for punctuation and tool outputs
+
+
+## 2026-03-02
+
+Documented and implemented query semantics decision: literal query default with --raw-fts-query opt-in for advanced FTS syntax.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/search.go — Added --raw-fts-query flag and help text
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/indexdb_test.go — Raw-FTS opt-in test coverage
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/internal/indexdb/search.go — RawQuery option bypasses literal quoting only when explicitly enabled
+
+
+## 2026-03-02
+
+Ran real-corpus indexed-vs-fallback validation on a bounded project slice and summarized parity/diff results in the assessment doc.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/analysis/02-real-corpus-search-compare.txt — Captured real-corpus run outputs
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/02-codex-sessions-comprehensive-reliability-assessment.md — Added real-corpus result summary section
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/scripts/search-real-corpus-compare.sh — Comparator now supports skip-build and forces indexed mode with stale-index-policy=ignore for fair diffing
+
+
+## 2026-03-02
+
+Refactored main.go command registration into shared glazed command builder helpers and buildRootCommand().
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main.go — Replaced repetitive command wiring with helper-based construction
+
+
+## 2026-03-02
+
+Added command-tree wiring tests for top-level and grouped subcommands via buildRootCommand().
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/cmd/codex-session/main_wiring_test.go — Asserts command registration coverage for index/cleanup/traces groups
+
+
+## 2026-03-02
+
+Decided and documented root-level flag behavior: glazed-style flags are intentionally subcommand-only.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/README.md — Added explicit CLI behavior note for root vs subcommand flags
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Recorded decision update
+
+
+## 2026-03-02
+
+Closed go.work policy decision: workspace mode is canonical after aligning go.work to Go 1.25.7.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/01-codex-session-main-go-failure-analysis.md — Updated decision note and removed open question
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/go.work — Workspace Go version aligned with glazed/go-go-goja requirements
+
+
+## 2026-03-02
+
+Authored comprehensive postmortem and intern onboarding guide (design-doc 03) and prepared updated delivery bundle.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md — Primary postmortem artifact
+
+
+## 2026-03-02
+
+Uploaded comprehensive postmortem bundle to reMarkable and verified cloud listing in ticket folder.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/design-doc/03-comprehensive-postmortem-and-intern-onboarding-guide.md — Included in uploaded bundle
+- /home/manuel/workspaces/2026-03-02/fix-codex-sessions/codex-sessions/ttmp/2026/03/02/CODEX-002-ANALYZE-CODEX-SESSION-MAIN-GO--analyze-codex-session-main-go-command-wiring/reference/01-investigation-diary.md — Updated with final delivery commands and results
+

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,25 +23,27 @@ import (
 )
 
 type SearchSettings struct {
-	SessionsRoot      string            `glazed.parameter:"sessions-root"`
-	IndexPath         string            `glazed.parameter:"index-path"`
-	UseIndex          bool              `glazed.parameter:"use-index"`
-	NoReindex         bool              `glazed.parameter:"no-reindex"`
-	Scope             string            `glazed.parameter:"scope"`
-	Query             string            `glazed.parameter:"query"`
-	Tool              string            `glazed.parameter:"tool"`
-	Args              map[string]string `glazed.parameter:"arg"`
-	Project           string            `glazed.parameter:"project"`
-	Since             string            `glazed.parameter:"since"`
-	Until             string            `glazed.parameter:"until"`
-	Limit             int               `glazed.parameter:"limit"`
-	MaxResults        int               `glazed.parameter:"max-results"`
-	IncludeMostRecent bool              `glazed.parameter:"include-most-recent"`
-	IncludeCopies     bool              `glazed.parameter:"include-reflection-copies"`
-	CaseSensitive     bool              `glazed.parameter:"case-sensitive"`
-	PerMessage        bool              `glazed.parameter:"per-message"`
-	MaxSnippetChars   int               `glazed.parameter:"max-snippet-chars"`
-	SingleLine        bool              `glazed.parameter:"single-line"`
+	SessionsRoot      string            `glazed:"sessions-root"`
+	IndexPath         string            `glazed:"index-path"`
+	UseIndex          bool              `glazed:"use-index"`
+	NoReindex         bool              `glazed:"no-reindex"`
+	StaleIndexPolicy  string            `glazed:"stale-index-policy"`
+	RawFTSQuery       bool              `glazed:"raw-fts-query"`
+	Scope             string            `glazed:"scope"`
+	Query             string            `glazed:"query"`
+	Tool              string            `glazed:"tool"`
+	Args              map[string]string `glazed:"arg"`
+	Project           string            `glazed:"project"`
+	Since             string            `glazed:"since"`
+	Until             string            `glazed:"until"`
+	Limit             int               `glazed:"limit"`
+	MaxResults        int               `glazed:"max-results"`
+	IncludeMostRecent bool              `glazed:"include-most-recent"`
+	IncludeCopies     bool              `glazed:"include-reflection-copies"`
+	CaseSensitive     bool              `glazed:"case-sensitive"`
+	PerMessage        bool              `glazed:"per-message"`
+	MaxSnippetChars   int               `glazed:"max-snippet-chars"`
+	SingleLine        bool              `glazed:"single-line"`
 }
 
 type SearchCommand struct {
@@ -76,6 +80,13 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				fields.WithHelp("Use SQLite/FTS index when present (falls back to streaming scan if missing)"),
 			),
 			fields.New(
+				"stale-index-policy",
+				fields.TypeChoice,
+				fields.WithDefault("fallback"),
+				fields.WithChoices("ignore", "warn", "fallback", "error"),
+				fields.WithHelp("When index appears stale: ignore, warn, fallback to scan, or error"),
+			),
+			fields.New(
 				"no-reindex",
 				fields.TypeBool,
 				fields.WithDefault(false),
@@ -92,7 +103,13 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 				"query",
 				fields.TypeString,
 				fields.WithDefault(""),
-				fields.WithHelp("Query substring to search for (required)"),
+				fields.WithHelp("Query text to search for (required; literal by default, unless --raw-fts-query)"),
+			),
+			fields.New(
+				"raw-fts-query",
+				fields.TypeBool,
+				fields.WithDefault(false),
+				fields.WithHelp("Indexed mode only: treat --query as raw SQLite FTS syntax instead of literal text"),
 			),
 			fields.New(
 				"tool",
@@ -179,13 +196,78 @@ This is a non-indexed fallback that scans messages extracted from event_msg/resp
 
 var _ cmds.GlazeCommand = &SearchCommand{}
 
+func discoverFilteredMetas(settings *SearchSettings, since, until *time.Time) ([]sessions.SessionMeta, error) {
+	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
+		IncludeFilenameCopies:   false,
+		IncludeReflectionCopies: settings.IncludeCopies,
+		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	metas := make([]sessions.SessionMeta, 0, len(paths))
+	for _, p := range paths {
+		meta, err := sessions.ReadSessionMeta(p)
+		if err != nil {
+			continue
+		}
+		if settings.Project != "" && meta.ProjectName() != settings.Project {
+			continue
+		}
+		if since != nil && meta.Timestamp.Before(*since) {
+			continue
+		}
+		if until != nil && meta.Timestamp.After(*until) {
+			continue
+		}
+		metas = append(metas, meta)
+	}
+	return metas, nil
+}
+
+func detectStaleIndex(
+	ctx context.Context,
+	db *sql.DB,
+	metas []sessions.SessionMeta,
+) (bool, string, error) {
+	for _, meta := range metas {
+		var sourceMtime sql.NullInt64
+		var sourceSize sql.NullInt64
+		err := db.QueryRowContext(
+			ctx,
+			"SELECT source_mtime, source_size FROM sessions WHERE session_id = ? LIMIT 1",
+			meta.ID,
+		).Scan(&sourceMtime, &sourceSize)
+		if err == sql.ErrNoRows {
+			return true, fmt.Sprintf("session %s is missing from index", meta.ID), nil
+		}
+		if err != nil {
+			return false, "", err
+		}
+
+		fileInfo, err := os.Stat(meta.Path)
+		if err != nil {
+			return true, fmt.Sprintf("failed to stat session file %s", filepath.Clean(meta.Path)), nil
+		}
+		if !sourceMtime.Valid || !sourceSize.Valid || sourceMtime.Int64 == 0 || sourceSize.Int64 == 0 {
+			return true, fmt.Sprintf("session %s has no source mtime/size recorded in index", meta.ID), nil
+		}
+		if sourceMtime.Int64 != fileInfo.ModTime().Unix() || sourceSize.Int64 != fileInfo.Size() {
+			return true, fmt.Sprintf("session %s changed after it was indexed", meta.ID), nil
+		}
+	}
+
+	return false, "", nil
+}
+
 func (c *SearchCommand) RunIntoGlazeProcessor(
 	ctx context.Context,
 	vals *values.Values,
 	gp middlewares.Processor,
 ) error {
 	settings := &SearchSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 	if strings.TrimSpace(settings.Query) == "" && len(settings.Args) == 0 && strings.TrimSpace(settings.Tool) == "" {
@@ -254,13 +336,54 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 				if err != nil {
 					return err
 				}
-				stale := indexdb.FindStaleRows(rows)
-				if len(stale) > 0 {
+				// Align with include-most-recent semantics: by default, skip newest session.
+				rows = filterRows(rows, settings.IncludeMostRecent, 0)
+				staleRows := indexdb.FindStaleRows(rows)
+				if len(staleRows) > 0 {
 					buildOpts := indexdb.DefaultBuildOptions()
 					buildOpts.Force = true
-					for _, row := range stale {
+					for _, row := range staleRows {
 						meta := indexdb.RowToMeta(row)
 						_ = indexdb.BuildSessionIndex(ctx, db, meta, buildOpts)
+					}
+				}
+			}
+
+			metasForFreshness, err := discoverFilteredMetas(settings, since, until)
+			if err != nil {
+				return err
+			}
+			// Align stale-index checks with include-most-recent semantics (and index build defaults).
+			sort.Slice(metasForFreshness, func(i, j int) bool {
+				return metasForFreshness[i].Timestamp.Before(metasForFreshness[j].Timestamp)
+			})
+			if !settings.IncludeMostRecent && len(metasForFreshness) > 0 {
+				newest := metasForFreshness[len(metasForFreshness)-1].Timestamp
+				filtered := metasForFreshness[:0]
+				for _, m := range metasForFreshness {
+					if !m.Timestamp.Equal(newest) {
+						filtered = append(filtered, m)
+					}
+				}
+				metasForFreshness = filtered
+			}
+			if len(metasForFreshness) > 0 {
+				stale, staleReason, err := detectStaleIndex(ctx, db, metasForFreshness)
+				if err != nil {
+					return err
+				}
+				if stale {
+					switch settings.StaleIndexPolicy {
+					case "ignore":
+					case "warn":
+						fmt.Fprintf(os.Stderr, "warning: stale index detected (%s); results may be outdated\n", staleReason)
+					case "fallback":
+						fmt.Fprintf(os.Stderr, "warning: stale index detected (%s); falling back to streaming scan\n", staleReason)
+						goto fallbackSearch
+					case "error":
+						return errors.Errorf("stale index detected (%s); run `codex-session index build`", staleReason)
+					default:
+						return errors.Errorf("invalid --stale-index-policy %q", settings.StaleIndexPolicy)
 					}
 				}
 			}
@@ -275,6 +398,7 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 
 			hits, err := indexdb.Search(ctx, db, indexdb.SearchOptions{
 				Query:      settings.Query,
+				RawQuery:   settings.RawFTSQuery,
 				MaxResults: settings.MaxResults,
 				Scope:      scope,
 				Tool:       settings.Tool,
@@ -356,31 +480,10 @@ func (c *SearchCommand) RunIntoGlazeProcessor(
 		}
 	}
 
-	paths, err := sessions.DiscoverRolloutFilesWithOptions(settings.SessionsRoot, sessions.DiscoverOptions{
-		IncludeFilenameCopies:   false,
-		IncludeReflectionCopies: settings.IncludeCopies,
-		ReflectionCopyPrefix:    sessions.DefaultSelfReflectionPrefix,
-	})
+fallbackSearch:
+	metas, err := discoverFilteredMetas(settings, since, until)
 	if err != nil {
 		return err
-	}
-
-	metas := make([]sessions.SessionMeta, 0, len(paths))
-	for _, p := range paths {
-		meta, err := sessions.ReadSessionMeta(p)
-		if err != nil {
-			continue
-		}
-		if settings.Project != "" && meta.ProjectName() != settings.Project {
-			continue
-		}
-		if since != nil && meta.Timestamp.Before(*since) {
-			continue
-		}
-		if until != nil && meta.Timestamp.After(*until) {
-			continue
-		}
-		metas = append(metas, meta)
 	}
 
 	// Reuse the same selection semantics as list: sort by started_at, skip newest, then apply limit.

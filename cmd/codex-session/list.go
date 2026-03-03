@@ -19,16 +19,16 @@ import (
 )
 
 type ListSettings struct {
-	SessionsRoot      string `glazed.parameter:"sessions-root"`
-	IndexPath         string `glazed.parameter:"index-path"`
-	Project           string `glazed.parameter:"project"`
-	Since             string `glazed.parameter:"since"`
-	Until             string `glazed.parameter:"until"`
-	Limit             int    `glazed.parameter:"limit"`
-	IncludeMostRecent bool   `glazed.parameter:"include-most-recent"`
-	IncludeCopies     bool   `glazed.parameter:"include-reflection-copies"`
-	NoIndex           bool   `glazed.parameter:"no-index"`
-	NoReindex         bool   `glazed.parameter:"no-reindex"`
+	SessionsRoot      string `glazed:"sessions-root"`
+	IndexPath         string `glazed:"index-path"`
+	Project           string `glazed:"project"`
+	Since             string `glazed:"since"`
+	Until             string `glazed:"until"`
+	Limit             int    `glazed:"limit"`
+	IncludeMostRecent bool   `glazed:"include-most-recent"`
+	IncludeCopies     bool   `glazed:"include-reflection-copies"`
+	NoIndex           bool   `glazed:"no-index"`
+	NoReindex         bool   `glazed:"no-reindex"`
 }
 
 type ListCommand struct {
@@ -117,7 +117,7 @@ func (c *ListCommand) RunIntoGlazeProcessor(
 	gp middlewares.Processor,
 ) error {
 	settings := &ListSettings{}
-	if err := values.DecodeSectionInto(vals, schema.DefaultSlug, settings); err != nil {
+	if err := vals.DecodeSectionInto(schema.DefaultSlug, settings); err != nil {
 		return errors.Wrap(err, "failed to decode settings")
 	}
 
