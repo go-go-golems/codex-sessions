@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -113,5 +114,96 @@ func TestDetectStaleIndex(t *testing.T) {
 	}
 	if !strings.Contains(reason, "missing from index") {
 		t.Fatalf("unexpected stale reason for missing session: %q", reason)
+	}
+}
+
+func TestStaleIndexSelectionSkipsNewestWhenIncludeMostRecentFalse(t *testing.T) {
+	ctx := context.Background()
+	tmp := t.TempDir()
+	sessionsRoot := filepath.Join(tmp, "sessions")
+
+	pathA := writeTestSession(
+		t,
+		sessionsRoot,
+		filepath.Join("2026", "03", "02", "rollout-2026-03-02T10-00-00-a.jsonl"),
+		"sid-a",
+		"/tmp/proj",
+		"2026-03-02T10:00:00Z",
+		"old-term",
+	)
+	pathB := writeTestSession(
+		t,
+		sessionsRoot,
+		filepath.Join("2026", "03", "02", "rollout-2026-03-02T10-01-00-b.jsonl"),
+		"sid-b",
+		"/tmp/proj",
+		"2026-03-02T10:01:00Z",
+		"new-term",
+	)
+
+	metaA, err := sessions.ReadSessionMeta(pathA)
+	if err != nil {
+		t.Fatalf("ReadSessionMeta A: %v", err)
+	}
+	metaB, err := sessions.ReadSessionMeta(pathB)
+	if err != nil {
+		t.Fatalf("ReadSessionMeta B: %v", err)
+	}
+
+	indexPath := indexdb.DefaultIndexPath(sessionsRoot)
+	db, err := indexdb.Open(indexPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+	if err := indexdb.EnsureSchema(db); err != nil {
+		t.Fatalf("EnsureSchema: %v", err)
+	}
+
+	// Only index the older session. The newer session should not force a stale signal
+	// when include-most-recent=false (default selection semantics).
+	r := indexdb.BuildSessionIndex(ctx, db, metaA, indexdb.BuildOptions{
+		MaxChars:           20000,
+		IncludeToolCalls:   true,
+		IncludeToolOutputs: true,
+	})
+	if r.Status != indexdb.SessionIndexed {
+		t.Fatalf("expected indexed, got %q (err=%q)", r.Status, r.Error)
+	}
+
+	settings := &SearchSettings{
+		SessionsRoot:      sessionsRoot,
+		IncludeCopies:     false,
+		IncludeMostRecent: false,
+	}
+	metas, err := discoverFilteredMetas(settings, nil, nil)
+	if err != nil {
+		t.Fatalf("discoverFilteredMetas: %v", err)
+	}
+	sort.Slice(metas, func(i, j int) bool { return metas[i].Timestamp.Before(metas[j].Timestamp) })
+	if len(metas) != 2 {
+		t.Fatalf("expected 2 metas, got %d", len(metas))
+	}
+
+	// Mirror the staleness selection logic in search: skip newest session by default.
+	newest := metas[len(metas)-1].Timestamp
+	filtered := metas[:0]
+	for _, m := range metas {
+		if !m.Timestamp.Equal(newest) {
+			filtered = append(filtered, m)
+		}
+	}
+	metas = filtered
+
+	if len(metas) != 1 || metas[0].ID != metaA.ID {
+		t.Fatalf("expected only metaA after filtering, got %+v (metaB=%s)", metas, metaB.ID)
+	}
+
+	stale, reason, err := detectStaleIndex(ctx, db, metas)
+	if err != nil {
+		t.Fatalf("detectStaleIndex: %v", err)
+	}
+	if stale {
+		t.Fatalf("expected non-stale after skipping newest missing meta, got stale: %s", reason)
 	}
 }
