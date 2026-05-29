@@ -55,3 +55,11 @@ codex_session_BINARY=$(shell which codex-session)
 install:
 	go build -o ./dist/codex-session ./cmd/codex-session && \
 		cp ./dist/codex-session $(codex_session_BINARY)
+
+.PHONY: logcopter-generate
+logcopter-generate:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.codex-sessions -strip-prefix github.com/go-go-golems/codex-session ./cmd/... ./pkg/...
+
+.PHONY: logcopter-check
+logcopter-check:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.codex-sessions -strip-prefix github.com/go-go-golems/codex-session -check ./cmd/... ./pkg/...
